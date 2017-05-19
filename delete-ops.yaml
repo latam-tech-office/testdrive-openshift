@@ -1,0 +1,84 @@
+---
+- name: Delete all 3 Hosts for OpenShift TestDrive@Ops{{ ':' }} Master, Infra and Node
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+  tasks:
+     - include: commons/setting_defaults.yaml
+
+     - name: email is not defined
+       fail: msg="email is not defined"
+       when: email is not defined
+
+     - name: Obtaing only the username from email
+       set_fact: username={{ email | regex_replace('[@](.*)$', '') }}
+
+     - set_fact: openshift_master="{{ username }}-master"
+     - set_fact: openshift_infra="{{ username }}-infra"
+     - set_fact: openshift_node="{{ username }}-node"
+
+     - name: Deleting instance exists{{ ':' }} {{ openshift_master }}
+       gce:
+         instance_names: "{{ openshift_master }}"
+         zone: "{{ zone }}"
+         state: "absent"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: master_instance_status  
+
+     - name: Deleting Docker Storage for{{ ':' }}{{ openshift_master }}
+       gce_pd:
+         name: "{{ openshift_master }}-docker"
+         zone: "{{ zone }}"
+         state: absent
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+ 
+     - name: Deleting instance exists{{ ':' }} {{ openshift_infra }}
+       gce:
+         instance_names: "{{ openshift_infra }}"
+         zone: "{{ zone }}"
+         state: "absent"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: infra_instance_status
+
+     - name: Deleting Docker Storage for{{ ':' }}{{ openshift_infra }}
+       gce_pd:
+         name: "{{ openshift_infra }}-docker"
+         zone: "{{ zone }}"
+         state: absent
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+
+     - name: Deleting instance exists{{ ':' }} {{ openshift_node }}
+       gce:
+         instance_names: "{{ openshift_node }}"
+         zone: "{{ zone }}"
+         state: "absent"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: node_instance_status 
+
+     - name: Deleting Docker Storage for{{ ':' }}{{ openshift_node }}
+       gce_pd:
+         name: "{{ openshift_node }}-docker"
+         zone: "{{ zone }}"
+         state: absent
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True 

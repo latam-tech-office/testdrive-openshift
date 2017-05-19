@@ -1,0 +1,11 @@
+- fail: msg="variable default_smtp_server is not defined"
+  when: default_smtp_server is not defined
+
+- fail: msg="variable default_smtp_port is not defined"
+  when: default_smtp_port is not defined
+
+- fail: msg="variable default_smtp_username is not defined"
+  when: default_smtp_username is not defined
+
+- fail: msg="variable default_smtp_password is not defined"
+  when: default_smtp_password is not defined

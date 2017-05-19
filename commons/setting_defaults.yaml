@@ -53,3 +53,11 @@
      - master
      - infra
      - node
+
+- set_fact: docker_size={{ gce_default_docker_size }}
+  when: docker_size is not defined
+  tags:
+     - create
+     - master
+     - infra
+     - node
