@@ -1,0 +1,9 @@
+gce_default_machine_type: n1-standard-1
+gce_default_region: us-east1
+gce_default_zone:   us-east1-c
+gce_default_network_name: openshift
+gce_default_subnetwork_name: openshift-subnet
+gce_default_subnetwork_range: 192.168.0.0/16
+#gce_default_image: rhel-7-v20170227
+gce_default_image: rhel73-20g
+
