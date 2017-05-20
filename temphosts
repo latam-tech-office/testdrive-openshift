@@ -1,0 +1,7 @@
+[openshift_master_group]
+104.196.161.154 ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+[openshift_infra_group]
+35.185.7.24 ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+[openshift_node_group]
+35.185.116.240 ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+

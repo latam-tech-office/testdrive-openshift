@@ -1,0 +1,352 @@
+---
+- name: Create an environment OpenShift TestDrive@Dev{{ ':' }} based on file dev-openshift-definition.info
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - dev-openshift-definition.info
+  tasks:
+     - include: commons/setting_defaults.yaml
+
+### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
+#### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
+     - name: Creating instance {{ ':' }} {{ master_definition.hostname }}
+       gce:
+         instance_names: "{{ master_definition.hostname }}"
+         state: "present"
+         machine_type: "{{ master_definition.machine }}"
+         image: "{{ master_definition.image }}"
+         zone: "{{ zone }}"
+         network: "{{ network_name }}"
+         subnetwork: "{{ subnetwork_name }}"
+         tags: ["enable-ssh","openshift-master"]
+         disk_auto_delete: True
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: master_instance_creation
+
+     - debug: var=master_instance_creation
+
+     - name: Getting OpenShift's Master Public IP{{ ':' }} {{ master_instance_creation.instance_data[0].public_ip }}
+       set_fact: openshift_master_public_ip={{ master_instance_creation.instance_data[0].public_ip }}
+
+     - name: Attaching a Docker storage{{ ':' }} {{ master_definition.hostname }}
+       gce_pd:
+         instance_name: "{{ master_definition.hostname }}"
+         name: "{{ master_definition.hostname }}-docker"
+         state: present
+         mode: READ_WRITE
+         disk_type: pd-standard
+         size_gb: "{{ master_definition.disk_docker }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+
+     - name: Adding OpenShift's Master into group{{ ':' }} openshift_master_group
+       add_host: groups=openshift_master_group hostname={{ openshift_master_public_ip }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}
+
+### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
+#### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
+     - name: Creating instance {{ ':' }} {{ infra_definition.hostname }}
+       gce:
+         instance_names: "{{ infra_definition.hostname }}"
+         state: "present"
+         machine_type: "{{ infra_definition.machine }}"
+         image: "{{ infra_definition.image }}"
+         zone: "{{ zone }}"
+         network: "{{ network_name }}"
+         subnetwork: "{{ subnetwork_name }}"
+         tags: ["enable-ssh","openshift-infra-node"]
+         disk_auto_delete: True
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: infra_instance_creation
+
+     - debug: var=infra_instance_creation
+
+     - name: Getting OpenShift's Infra Public IP{{ ':' }} {{ infra_instance_creation.instance_data[0].public_ip }}
+       set_fact: openshift_infra_public_ip={{ infra_instance_creation.instance_data[0].public_ip }}
+
+     - name: Attaching a Docker storage{{ ':' }} {{ infra_definition.hostname }}
+       gce_pd:
+         instance_name: "{{ infra_definition.hostname }}"
+         name: "{{ infra_definition.hostname }}-docker"
+         state: present
+         mode: READ_WRITE
+         disk_type: pd-standard
+         size_gb: "{{ infra_definition.disk_docker }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+
+     - name: Adding OpenShift's Infra into group{{ ':' }} openshift_infra_group
+       add_host: groups=openshift_infra_group hostname={{ openshift_infra_public_ip }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }} 
+
+### NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE 
+#### NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE 
+     - name: Creating instance ALL NODES
+       gce:
+         instance_names: "{{ item.hostname }}"
+         state: "present"
+         machine_type: "{{ item.machine }}"
+         image: "{{ item.image }}"
+         zone: "{{ zone }}"
+         network: "{{ network_name }}"
+         subnetwork: "{{ subnetwork_name }}"
+         tags: "{{ item.tags }}"
+         disk_auto_delete: True
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       with_items: "{{ nodes_definition }}"
+       register: node_instance_creation
+
+     - debug: var=node_instance_creation
+
+     - name: Attaching a Docker storage for Nodes
+       gce_pd:
+         instance_name: "{{ item.hostname }}"
+         name: "{{ item.hostname }}-docker"
+         state: present
+         mode: READ_WRITE
+         disk_type: pd-standard
+         size_gb: "{{ item.disk_docker }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       with_items: "{{ nodes_definition }}"
+
+     - name: Adding OpenShift's Infra into group{{ ':' }} openshift_node_group
+       add_host: hostname={{ item.instance_data[0].public_ip }} groups=openshift_node_group
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}
+       with_items: "{{ node_instance_creation.results }}"
+
+### WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT 
+####  WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT WAIT 
+     - name: Wait for OpenShift's Master instance to be up{{ ':' }} {{ openshift_master_public_ip }}
+       wait_for: host="{{ openshift_master_public_ip }}" port={{ ssh_default_image_port }}
+                 delay=30  state=started       
+
+     - name: Wait for OpenShift's Infra instance to be up{{ ':' }} {{ openshift_infra_public_ip }}
+       wait_for: host="{{ openshift_master_public_ip }}" port={{ ssh_default_image_port }}
+                 delay=30  state=started
+
+     - name: Wait for OpenShift's Node instances to be up
+       wait_for: host="{{ item.instance_data[0].public_ip }}" port={{ ssh_default_image_port }}  delay=30  state=started
+       with_items: "{{ node_instance_creation.results }}"
+
+     - name: Generating the first version of the inventory file
+       template: src=template/ansible_hosts.j2 dest=/tmp/ansible_hosts.j2
+
+     - name: Add the hostname into the temporary inventory{{ ':' }} {{ master_definition.hostname }} into masters section
+       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[masters\]" state="present" line="{{ master_definition.hostname }} openshift_public_hostname=master.testdrive.com"
+
+     - name: Add the hostname into the temporary inventory{{ ':' }} {{ master_definition.hostname }} into nodes section 
+       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ master_definition.hostname }}"
+
+     - name: Add the hostname into the temporary inventory file{{ ':' }} {{ infra_definition.hostname }} into nodes section
+       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ infra_definition.hostname }} openshift_node_labels=\"{'host'{{ ':' }} 'infra'}\""
+
+     - name: Add the hostname into the temporary inventory (all Nodes)
+       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ item.hostname }}  openshift_node_labels=\"{'host'{{ ':' }} 'apps'}\""
+       with_items: "{{ nodes_definition }}" 
+
+### MASTER SSH MASTER SSH MASTER SSH MASTER SSH MASTER SSH MASTER SSH MASTER SSH MASTER SSH 
+###  MASTER SSH MASTER SSH MASTER SSH MASTER SSH MASTER SSH MASTER SSH MASTER SSH MASTER SSH 
+- name: (MASTER SSH) Preparing Master 
+  hosts: openshift_master_group
+  vars_files:
+     - gce/defaults  
+  tasks:
+    - name: Generate keys for Master
+      command: "ssh-keygen -b 4096 -t rsa -f /root/.ssh/id_rsa -q -N \"\""
+      tags:
+         - prepare_master
+
+    - name: Read the content of this key
+      slurp: src=/root/.ssh/id_rsa.pub
+      register: content_encoded
+      tags:
+         - prepare_master
+
+    - name: Define the content of the key
+      set_fact: openshift_master_ssh_key="{{ content_encoded.content | b64decode }}"
+      tags:
+         - prepare_master
+
+    - name: Generating a list of repository for all hosts
+      template: src=template/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
+      tags:
+         - prepare_master
+
+    - name: Updating the entire host
+      yum: name="*" state=latest
+      tags:
+         - prepare_master
+
+    - name: Installing OpenShift's Utils
+      yum: name="atomic-openshift-utils" state=latest
+      tags:
+         - prepare_master
+
+    - name: Define the final Inventory for installation
+      template: src=/tmp/ansible_hosts.j2 dest=/etc/ansible/hosts
+      tags:
+         - prepare_master
+
+    - name: Disable 'host_key_checking' in Ansible
+      lineinfile: dest=/etc/ansible/ansible.cfg regexp="host_key_checking" state=present line="host_key_checking = False"
+      tags:
+         - prepare_master
+
+    - name: Create a post-install playbook in root
+      template: src=template/post-install-openshift.yaml.j2 dest=/root/post-install-openshift.yaml
+      tags:
+         - prepare_master
+
+### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
+###   PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
+- name: (PREPARE) Preparing all hosts to install OpenShift
+  hosts: all
+  gather_facts: False
+  vars_files:
+     - gce/defaults
+  vars:
+     docker_device: /dev/sdb
+     docker_device_partition: "{{ docker_device }}1"
+     prereqs_packages:
+       - vim
+       - wget
+       - git
+       - net-tools
+       - bind-utils
+       - docker
+       - atomic-openshift-excluder
+       - atomic-openshift-docker-excluder
+       - iptables-services
+       - bridge-utils
+       - bash-completion
+       - docker
+       - httpd-tools
+  tasks:
+    - name: Allow this host to log as root
+      lineinfile: dest=/etc/ssh/sshd_config state=present regexp="^PermitRootLogin" line="# PermitRootLogin yes"
+      tags:
+         - prepare
+
+    - name: Restart SSHD Service
+      service: name=sshd state=restarted
+      tags:
+         - prepare
+
+    - name: Create OpenShift's Master SSH Key
+      lineinfile: dest=/root/.ssh/authorized_keys state=present create=yes line="{{ hostvars[groups.openshift_master_group[0]]['openshift_master_ssh_key'] }}"
+      tags:
+         - prepare
+
+    - name: Generating a list of repository for all hosts
+      template: src=template/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
+      tags:
+         - prepare
+
+    - name: Updating the entire host
+      yum: name="*" state=latest
+      tags:
+         - prepare
+
+    - name: Installing Basic Applications
+      yum: name="{{ item }}" state=present
+      with_items: "{{ prereqs_packages }}"
+      tags:
+         - prepare
+
+    - name: Create a partition for Docker
+      command: parted {{ docker_device }} --script 'mklabel msdos mkpart primary 0% 100%'
+      tags:
+         - prepare
+
+    - name: Create a VG named docker-vg (used for Docker)
+      lvg: vg=docker-vg pvs={{ docker_device_partition }}
+      tags:
+         - prepare
+
+    - name: Configuring Docker-Storage-Setup first
+      lineinfile: dest=/etc/sysconfig/docker-storage-setup line="VG=docker-vg"
+      tags:
+         - prepare
+
+    - name: Run a Docker-Storage-Setup
+      command: /usr/bin/docker-storage-setup
+      tags:
+         - prepare
+
+    - name: Execute a Atomic OpenShift Excluder
+      command: atomic-openshift-excluder unexclude
+      tags:
+         - prepare
+
+    - name: Setting Docker configuration with with the correct info
+      lineinfile: dest=/etc/sysconfig/docker regexp="OPTIONS=.*" line="OPTIONS=\"--selinux-enabled --insecure-registry 172.30.0.0/16  --log-driver=journald\""
+      tags:
+         - prepare
+
+
+### FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS  
+#### FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS 
+- name: (FINAL STEPS) Removing undesirable tags and notifying user
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - dev-openshift-definition.info
+  tasks:
+     - include: commons/setting_defaults.yaml
+       tags:
+          - final_steps
+
+     - name: Removing SSH capability from OpenShift's Infra
+       gce_tag:
+         instance_name: "{{ infra_definition.hostname }}"
+         tags: "enable-ssh"
+         state: "absent"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         pem_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       tags:
+          - final_steps
+
+     - name: Removing SSH capability from OpenShift's Node
+       gce_tag:
+         instance_name: "{{ item.hostname }}"
+         tags: "enable-ssh"
+         state: "absent"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         pem_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       with_items: "{{ nodes_definition }}"
+       tags:
+          - final_steps
+
+     - name: Update bin/install_openshift.sh to call the right server
+       copy: dest=bin/install_openshift.sh content="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {{ ssh_default_image_user }}@{{ openshift_master_public_ip }} \"sudo ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml; ansible-playbook /root/post-install-openshift.yaml\""
+       tags:
+          - final_steps

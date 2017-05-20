@@ -6,6 +6,8 @@
   vars_files:
      - gce/authentication
      - gce/defaults
+  vars:
+     attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
   tasks:
      - include: commons/setting_defaults.yaml
 
@@ -13,12 +15,22 @@
        fail: msg="email is not defined"
        when: email is not defined
 
-     - name: Obtaing only the username from email
-       set_fact: username={{ email | regex_replace('[@](.*)$', '') }}
+### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+#### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+     - name: Lookup for this email{{ ':' }} {{ email }}
+       set_fact: line_selected={{ item }}
+       with_items: "{{ attendees }}"
+       when: email in item
 
-     - set_fact: openshift_master="{{ username }}-master"
-     - set_fact: openshift_infra="{{ username }}-infra"
-     - set_fact: openshift_node="{{ username }}-node"
+     - fail: msg="{{ email }} wasn't found into file ops-attendees.txt"
+       when: line_selected is not defined
+
+     - set_fact: user_id={{ line_selected.split(',')[0] }}
+     - set_fact: name={{ line_selected.split(',')[1] }}
+
+     - set_fact: openshift_master="{{ user_id }}-master"
+     - set_fact: openshift_infra="{{ user_id }}-infra"
+     - set_fact: openshift_node="{{ user_id }}-node"
 
      - name: Deleting instance exists{{ ':' }} {{ openshift_master }}
        gce:

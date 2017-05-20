@@ -1,0 +1,21 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - dev-openshift-definition.info
+  tasks:
+     - name: Generating the first version of the inventory file
+       template: src=template/ansible_hosts.j2 dest=/tmp/ansible_hosts.j2
+
+     - name: Add the hostname into the temporary inventory{{ ':' }} {{ master_definition.hostname }} into masters section
+       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[masters\]" state="present" line="{{ master_definition.hostname }} openshift_public_hostname=master.testdrive.com"
+
+     - name: Add the hostname into the temporary inventory{{ ':' }} {{ master_definition.hostname }} into nodes section
+       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ master_definition.hostname }}"
+
+#     - name: Add the hostname into the temporary inventory file{{ ':' }} {{ infra_definition.hostname }} into nodes section
+#       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ infra_definition.hostname }} openshift_node_labels=\"{'host'{{ ':' }} 'infra'}\""
+
+#     - name: Add the hostname into the temporary inventory (all Nodes)
+#       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ item.hostname }}  openshift_node_labels=\"{'host'{{ ':' }} 'apps'}\""
+#       with_items: "{{ nodes_definition }}"

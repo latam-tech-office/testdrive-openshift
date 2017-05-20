@@ -7,6 +7,8 @@
      - gce/authentication
      - gce/defaults
      - mail/authentication
+  vars:
+     attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
   tasks:
      - include: commons/setting_defaults.yaml
      - include: commons/check_mail_settings.yaml
@@ -15,17 +17,27 @@
        fail: msg="email is not defined"
        when: email is not defined
 
-     - name: Obtaing only the username from email
-       set_fact: username={{ email | regex_replace('[@](.*)$', '') }}
+### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+#### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+     - name: Lookup for this email{{ ':' }} {{ email }}
+       set_fact: line_selected={{ item }}
+       with_items: "{{ attendees }}"
+       when: email in item
 
-     - name: Defining OpenShift's Master{{ ':' }} {{ username }}-master
-       set_fact: openshift_master="{{ username }}-master"
+     - fail: msg="{{ email }} wasn't found into file ops-attendees.txt"
+       when: line_selected is not defined
 
-     - name: Defining OpenShift's Infra{{ ':' }} {{ username }}-infra
-       set_fact: openshift_infra="{{ username }}-infra"
+     - set_fact: user_id={{ line_selected.split(',')[0] }}
+     - set_fact: name={{ line_selected.split(',')[1] }}
 
-     - name: Defining OpenShift's Node{{ ':' }} {{ username }}-node
-       set_fact: openshift_node="{{ username }}-node"
+     - name: Defining OpenShift's Master{{ ':' }} {{ user_id }}-master
+       set_fact: openshift_master="{{ user_id }}-master"
+
+     - name: Defining OpenShift's Infra{{ ':' }} {{ user_id }}-infra
+       set_fact: openshift_infra="{{ user_id }}-infra"
+
+     - name: Defining OpenShift's Node{{ ':' }} {{ user_id }}-node
+       set_fact: openshift_node="{{ user_id }}-node"
 
 ### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
 #### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 

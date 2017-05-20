@@ -1,6 +1,6 @@
-gce_service_account_email: macmaltron@testdrive-de-openshift.iam.gserviceaccount.com
-gce_credentials_file: /Users/mauricio/.gce/br-testdrive-environment.json
-gce_project_id: testdrive-de-openshift
+gce_service_account_email: 
+gce_credentials_file:
+gce_project_id: 
 
 ### Please add the following information in each task in your playbook
 ### project_id="{{ gce_project_id }}" credentials_file="{{ gce_credentials_file }}" service_account_email="{{ gce_service_account_email }}"

@@ -1,8 +1,0 @@
-- hosts: localhost
-  connection: local
-  gather_facts: False
-  vars:
-     attendees: "{{ lookup('file', 'attendees.txt').split('\n') }}"
-  tasks:
-     - debug: msg="Email {{ ':' }}{{ item }}"
-       with_items: "{{ attendees }}"
