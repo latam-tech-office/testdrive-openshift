@@ -10,4 +10,4 @@ gce_default_docker_size: 20
 ssh_default_image_user: 
 ssh_default_image_password: 
 ssh_default_image_port: 
-openshift_repository_ip:
+openshift_repository_ip: 

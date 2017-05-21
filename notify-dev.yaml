@@ -47,6 +47,12 @@
      - name: Getting OpenShift's Master Public IP{{ ':' }} {{ master_instance_status.instance_data[0].public_ip }}
        set_fact: openshift_master_public_ip={{ master_instance_status.instance_data[0].public_ip }}
 
+     - name: Adding OpenShift's Master into group{{ ':' }} openshift_master_group
+       add_host: groups=openshift_master_group hostname={{ openshift_master_public_ip }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}
+                 openshift_username={{ email }} openshift_password={{ user_id }}
+
      - name: Fetch information regarding OpenShift's Infra{{ ':' }} {{ infra_definition.hostname }}
        gce:
          instance_names: "{{ infra_definition.hostname }}"
@@ -66,8 +72,14 @@
              username="{{ default_smtp_username }}" password="{{ default_smtp_password }}"
              subject="TestDrive{{ ':' }} OpenShift@Dev"
              to="{{ email }}" from="LATAM Technology Office"
-             body="Here are the Public IP's for your Host\nOpenShift's Master IP{{ ':' }} {{ openshift_master_public_ip }}\nOpenShift's InfraNode IP{{ ':' }} {{ openshift_infra_public_ip }}\n\n\nPlease, run the command (as root){{ ':' }}\n# ansible-playbook /root/setup_openshift_ips.yaml"
+             body="Here are the Public IP's for your Host\nOpenShift's Master IP{{ ':' }} {{ openshift_master_public_ip }}\nOpenShift's InfraNode IP{{ ':' }} {{ openshift_infra_public_ip }}\n\n\nPlease, run the command (as root){{ ':' }}\n# ansible-playbook /root/setup_openshift_ips.yaml\n\n...and then, you might be access the URL: https://master.testdrive.com:8443 (Username:{{ email }}  Password:{{ user_id }})"
        ignore_errors: True
 
+- name: Create a user in OpenShift TestDrive@Dev
+  hosts: openshift_master_group
+  gather_facts: False
+  tasks:
+     - name: Creating username{{ ':' }} {{ openshift_username }} with password{{ ':' }} {{ openshift_password }}
+       command: htpasswd -b /etc/origin/master/openshift-passwords {{ openshift_username }} {{ openshift_password }}
 
 
