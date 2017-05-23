@@ -72,8 +72,9 @@
              username="{{ default_smtp_username }}" password="{{ default_smtp_password }}"
              subject="TestDrive{{ ':' }} OpenShift@Dev"
              to="{{ email }}" from="LATAM Technology Office"
-             body="Here are the Public IP's for your Host\nOpenShift's Master IP{{ ':' }} {{ openshift_master_public_ip }}\nOpenShift's InfraNode IP{{ ':' }} {{ openshift_infra_public_ip }}\n\n\nPlease, run the command (as root){{ ':' }}\n# ansible-playbook /root/setup_openshift_ips.yaml\n\n...and then, you might be access the URL: https://master.testdrive.com:8443 (Username:{{ email }}  Password:{{ user_id }})"
+             body="Here are the Public IP's for your Host\nOpenShift's Master IP{{ ':' }} {{ openshift_master_public_ip }}\nOpenShift's InfraNode IP{{ ':' }} {{ openshift_infra_public_ip }}\n\n\nPlease, run the command (as root){{ ':' }}\n# ansible-playbook /root/setup_openshift_ips.yaml\n\n...and then, you might be access your OpenShift at\nhttps{{ ':' }}//master.testdrive.com:8443\n(Username{{ ':' }} {{ email }}  Password{{ ':' }} {{ user_id }})"
        ignore_errors: True
+
 
 - name: Create a user in OpenShift TestDrive@Dev
   hosts: openshift_master_group
