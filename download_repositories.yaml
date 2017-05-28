@@ -1,0 +1,29 @@
+---
+- name: Downloading repositories (ONLY)
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+     repositories:
+         - rhel-7-server-rpms
+         - rhel-7-server-extras-rpms
+         - rhel-7-server-ose-3.5-rpms
+         - rhel-7-fast-datapath-rpms
+         - rhel-7-server-rhmap-4.3-rpms
+     disk_storage_directory: "/var/storage/repos"
+  tasks:
+    - name: Downloading repositories (FINAL STEP 1/2)
+      command: reposync --gpgcheck -lm --repoid={{ item }} --download_path={{ disk_storage_directory }}
+      with_items: "{{ repositories }}"
+      tags:
+         - prepare
+         - apache
+         - download_repos
+
+    - name: Creating Repositories (FINAL STEP 2/2)
+      command: createrepo -v {{ disk_storage_directory }}/{{ item }} -o {{ disk_storage_directory }}/{{ item }}
+      with_items: "{{ repositories }}"
+      tags:
+         - prepare
+         - apache
+         - download_repos
