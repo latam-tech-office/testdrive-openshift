@@ -1,0 +1,36 @@
+---
+- name: Deleting a Common OpenShift's Repository named{{ ':' }} {{ repository_name }}
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+  vars:
+     - repository_name: openshift-repository
+     - repository_machine_type: n1-standard-2
+     - repository_storage_size: 100
+  tasks:
+     - include: commons/setting_defaults.yaml
+       tags:
+          - always
+
+     - name: Deleting instance{{ ':' }} {{ repository_name }}
+       gce:
+         instance_names: "{{ repository_name }}"
+         zone: "{{ zone }}"
+         state: "absent"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+
+     - name: Deleting an extra storage area for Repository
+       gce_pd:
+         name: "{{ repository_name }}-storage"
+         zone: "{{ zone }}"
+         state: "absent"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True

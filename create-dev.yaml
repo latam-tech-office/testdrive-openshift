@@ -244,6 +244,18 @@
        - docker
        - httpd-tools
   tasks:
+    - name: Loading SSH KEY from localhost (if any)
+      set_fact: ssh_key="{{ lookup('file','{{ ssh_key_file }}') }}"
+      when: ssh_key_file is defined
+      tags:
+         - prepare
+
+    - name: Copy a SSH Key (if does exist)
+      lineinfile: dest=/root/.ssh/authorized_keys state=present create=yes line="{{ ssh_key }}"
+      when: ssh_key is defined
+      tags:
+         - prepare
+
     - name: Allow this host to log as root
       lineinfile: dest=/etc/ssh/sshd_config state=present regexp="^PermitRootLogin" line="# PermitRootLogin yes"
       tags:

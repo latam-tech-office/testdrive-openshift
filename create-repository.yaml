@@ -1,0 +1,269 @@
+---
+- name: Creating a Common OpenShift's Repository named{{ ':' }} openshift-repository
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+  vars:
+     - repository_name: openshift-repository
+     - repository_machine_type: n1-standard-2
+     - repository_storage_size: 100
+  tasks:
+    - include: commons/setting_defaults.yaml
+      tags:
+         - always
+
+    - fail: msg="redhat_subscription_username is not defined"
+      when: redhat_subscription_username is not defined
+      tags:
+         - always
+
+    - fail: msg="redhat_subscription_password is not defined"
+      when: redhat_subscription_password is not defined
+      tags:
+         - always
+
+    - fail: msg="redhat_subscription_pool_id is not defined"
+      when: redhat_subscription_pool_id is not defined
+      tags:
+         - always
+
+    - set_fact: openshift_repository_name="{{ repository_name }}"
+      tags:
+         - always
+
+    - name: Creating a instance for Openshift's Repository
+      gce:
+        instance_names: "{{ repository_name }}"
+        state: "present"
+        machine_type: "{{ repository_machine_type }}"
+        image: "{{ image }}"
+        zone: "{{ zone }}"
+        network: "{{ network_name }}"
+        subnetwork: "{{ subnetwork_name }}"
+        tags: "enable-ssh"
+        disk_auto_delete: True
+        project_id: "{{ gce_project_id }}"
+        credentials_file: "{{ gce_credentials_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+      register: repository_instance_creation
+      tags:
+         - create
+
+    - name: Getting OpenShift's Repository Public IP{{ ':' }} {{ repository_instance_creation.instance_data[0].public_ip }}
+      set_fact: openshift_repository_public_ip={{ repository_instance_creation.instance_data[0].public_ip }}
+      tags:
+         - create
+
+    - name: Getting OpenShift's Repository Private IP{{ ':' }} {{ repository_instance_creation.instance_data[0].private_ip }}
+      set_fact: openshift_repository_private_ip={{ repository_instance_creation.instance_data[0].private_ip }}
+      tags:
+         - create
+
+    - name: Adjusting "gce/defaults" file with private IP{{ ':' }} {{ openshift_repository_private_ip }}
+      lineinfile: dest=gce/defaults regexp="^openshift_repository_ip" line="openshift_repository_ip{{ ':' }} {{ openshift_repository_private_ip }}"
+      tags:
+         - create
+
+    - name: Attaching an extra storage area for Repository
+      gce_pd:
+        instance_name: "{{ repository_name }}"
+        name: "{{ repository_name }}-storage"
+        state: present
+        mode: READ_WRITE
+        disk_type: pd-standard
+        size_gb: "{{ repository_storage_size }}"
+        zone: "{{ zone }}"
+        project_id: "{{ gce_project_id }}"
+        credentials_file: "{{ gce_credentials_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+      tags:
+         - create
+
+    - name: Wait for OpenShift's Repository instance to be up{{ ':' }} {{ openshift_repository_public_ip }}
+      wait_for: host="{{ openshift_repository_public_ip }}" port={{ ssh_default_image_port }}
+                 delay=30  state=started
+      tags:
+         - create
+
+    - name: Adding OpenShift's Repository into group{{ ':' }} openshift_repos_group
+      add_host: groups=openshift_repos_group hostname={{ openshift_repository_public_ip }}
+                ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                ansible_port={{ ssh_default_image_port }}
+      tags:
+         - create
+
+### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE
+#### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE
+- name: (PREPARE) Preparing all the hosts with a basic configuration
+  hosts: all
+  gather_facts: False
+  vars:
+     repositories:
+         - rhel-7-server-rpms
+         - rhel-7-server-extras-rpms
+         - rhel-7-server-ose-3.5-rpms
+         - rhel-7-fast-datapath-rpms
+         - rhel-7-server-rhmap-4.3-rpms
+     disk_storage: "/dev/sdb"
+     disk_storage_partition: "{{ disk_storage }}1"
+     disk_storage_directory: "/var/storage/repos"
+     prereqs_packages:
+         - vim
+         - wget
+         - git
+         - net-tools
+         - bind-utils
+         - bridge-utils
+         - bash-completion
+         - yum-utils
+         - createrepo
+         - httpd
+  tasks:
+    - debug: var=hostvars
+      tags: 
+         - prepare
+
+    - name: Loading SSH KEY from localhost (if any)
+      set_fact: ssh_key="{{ lookup('file','{{ ssh_key_file }}') }}"
+      when: ssh_key_file is defined
+      tags:
+         - prepare
+
+    - name: Copy a SSH Key (if does exist)
+      lineinfile: dest=/root/.ssh/authorized_keys state=present create=yes line="{{ ssh_key }}"
+      when: ssh_key is defined
+      tags:
+         - prepare
+
+    - name: RED HAT SUBSCRIPTION{{ ':' }} Installing Red Hat's Subscription Manager
+      yum: name=subscription-manager state=latest
+      ignore_errors: True
+      tags:
+         - prepare
+
+    - name: RED HAT SUBSCRIPTION{{ ':' }} Registering to Red Hat's Subscription Manager
+      command: subscription-manager register --username={{ redhat_subscription_username }}  --password={{ redhat_subscription_password }} --force
+      tags:
+         - prepare
+
+    - name: RED HAT SUBSCRIPTION{{ ':' }} Attaching a Pool ID
+      command: subscription-manager attach --pool={{ redhat_subscription_pool_id }}
+      tags:
+         - prepare
+
+    - name: RED HAT SUBSCRIPTION{{ ':' }} Disable all Repositories
+      command: subscription-manager repos --disable="*"
+      tags:
+         - prepare
+
+    - name: RED HAT SUBSCRIPTION{{ ':' }} Enabling Repository
+      command: subscription-manager repos --enable={{ item }}
+      with_items: "{{ repositories }}"
+      tags:
+         - prepare
+
+    - name: Updating the entire host
+      yum: name="*" state=latest
+      tags:
+         - prepare
+
+    - name: Installing all the necessary applications
+      yum: name="{{ item }}" state=latest
+      with_items: "{{ prereqs_packages }}"
+      tags:
+         - prepare
+
+    - name: Create a partition for Storage
+      command: parted {{ disk_storage }} --script 'mklabel msdos mkpart primary 0% 100%'
+      tags:
+         - prepare
+
+    - name: Format partition{{ ':' }} "{{ disk_storage_partition }}" into XFS
+      filesystem: dev={{ disk_storage_partition }} fstype=xfs force=yes
+      tags:
+         - prepare
+
+    - name: Create a directory where all the content will be
+      file: path="{{ disk_storage_directory }}" state=directory recurse=yes
+      tags:
+         - prepare
+
+    - name: Mount storage area{{ ':' }} {{ disk_storage_partition }} at {{ disk_storage_directory }}
+      mount: src={{ disk_storage_partition }} path={{ disk_storage_directory }} fstype=xfs state=mounted
+      tags:
+         - prepare
+
+    - name: Adjust Apache WebServer's Configuration to serve from{{ ':' }} {{ disk_storage_directory }} (Step 1/2)
+      lineinfile: dest=/etc/httpd/conf/httpd.conf regexp="^DocumentRoot" line="DocumentRoot \"{{ disk_storage_directory }}\""
+      tags:
+         - prepare
+         - apache
+
+    - name: Adjust Apache WebServer's Configuration to serve from{{ ':' }} {{ disk_storage_directory }} (Step 2/2)
+      lineinfile: dest=/etc/httpd/conf/httpd.conf regexp="^[<]Directory ["]/var/www/html["]" line="<Directory \"{{ disk_storage_directory }}\">"
+      tags:
+         - prepare
+         - apache
+
+    - name: Start Apache Web Server
+      service: name=httpd state=started enabled=yes
+      tags:
+         - prepare
+         - apache
+
+    - name: Enable Port 80 on Firewall
+      firewalld: zone=public service=http state=enabled permanent=true immediate=true
+      tags:
+         - prepare
+         - apache 
+
+    - name: Adjust SELinux permission and set type{{ ':' }} httpd_sys_content_t
+      file: path={{ disk_storage_directory }} recurse=True setype=httpd_sys_content_t
+      tags:
+         - prepare
+         - apache
+
+    - name: Downloading repositories (FINAL STEP 1/2)
+      command: reposync --gpgcheck -lm --repoid={{ item }} --download_path={{ disk_storage_directory }}
+      with_items: "{{ repositories }}"
+      tags:
+         - prepare
+         - apache
+         - download_repos
+
+    - name: Creating Repositories (FINAL STEP 2/2)
+      command: createrepo -v {{ disk_storage_directory }}/{{ item }} -o {{ disk_storage_directory }}/{{ item }}
+      with_items: "{{ repositories }}"
+      tags:
+         - prepare
+         - apache
+         - download_repos 
+
+### FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS
+#### FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS
+- name: (FINAL STEPS) Removing SSH Outside acess
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+  tasks:
+     - include: commons/setting_defaults.yaml
+       tags:
+          - always
+
+     - name: Removing SSH capability from{{ ':' }} {{ openshift_repository_name }}
+       gce_tag:
+         instance_name: "{{ openshift_repository_name }}"
+         tags: "enable-ssh"
+         state: "absent"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         pem_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       tags:
+          - final_steps
