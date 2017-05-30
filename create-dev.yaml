@@ -34,6 +34,12 @@
      - name: Getting OpenShift's Master Public IP{{ ':' }} {{ master_instance_creation.instance_data[0].public_ip }}
        set_fact: openshift_master_public_ip={{ master_instance_creation.instance_data[0].public_ip }}
 
+     - name: Getting OpenShift's Master Private IP{{ ':' }} {{ master_instance_creation.instance_data[0].private_ip }}
+       set_fact: openshift_master_private_ip={{ master_instance_creation.instance_data[0].private_ip }}
+
+     - name: Update bin/install_openshift.sh to call the right server
+       copy: dest=bin/install_openshift.sh content="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {{ ssh_default_image_user }}@{{ openshift_master_public_ip }} \"sudo ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml; ansible-playbook /root/post-install-openshift.yaml; ansible-playbook /root/create_persistentvolumes.yaml -e nfs_server={{ openshift_master_private_ip }}\""
+
      - name: Attaching a Docker storage{{ ':' }} {{ master_definition.hostname }}
        gce_pd:
          instance_name: "{{ master_definition.hostname }}"
@@ -219,6 +225,12 @@
       tags:
          - prepare_master
 
+    - name: Download a playbook to create some persistence volumes in the cluster
+      uri:  url=https://raw.githubusercontent.com/latam-tech-office/2016-forum/master/create_persistentvolumes.yaml 
+            method=GET status_code=200 creates=True dest=/root
+      tags: 
+         - prepare_master
+
 ### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 ###   PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 - name: (PREPARE) Preparing all hosts to install OpenShift
@@ -355,10 +367,5 @@
          pem_file: "{{ gce_credentials_file }}"
          service_account_email: "{{ gce_service_account_email }}"
        with_items: "{{ nodes_definition }}"
-       tags:
-          - final_steps
-
-     - name: Update bin/install_openshift.sh to call the right server
-       copy: dest=bin/install_openshift.sh content="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {{ ssh_default_image_user }}@{{ openshift_master_public_ip }} \"sudo ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml; ansible-playbook /root/post-install-openshift.yaml\""
        tags:
           - final_steps

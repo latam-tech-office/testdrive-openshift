@@ -1,0 +1,70 @@
+---
+- name: Notify a specific attendee regarding his environment OpenShift TestDrive@Ops
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - mail/authentication
+  vars:
+     attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
+  tasks:
+     - include: commons/setting_defaults.yaml
+     - include: commons/check_mail_settings.yaml
+
+     - name: email is not defined
+       fail: msg="email is not defined"
+       when: email is not defined
+
+### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+#### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+     - name: Lookup for this email{{ ':' }} {{ email }}
+       set_fact: line_selected={{ item }}
+       with_items: "{{ attendees }}"
+       when: email in item
+
+     - fail: msg="{{ email }} wasn't found into file ops-attendees.txt"
+       when: line_selected is not defined
+
+     - set_fact: user_id={{ line_selected.split(',')[0] }}
+     - set_fact: name={{ line_selected.split(',')[1] }}
+   
+     - set_fact: openshift_master_hostname="{{ user_id }}-master"
+     - set_fact: openshift_infra_hostname="{{ user_id }}-infra"
+
+     - name: Fetch information regarding OpenShift's Master{{ ':' }} {{ openshift_master_hostname }}
+       gce:
+         instance_names: "{{ openshift_master_hostname }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       register: master_instance_status
+
+     - debug: var=master_instance_status
+
+     - name: Getting OpenShift's Master Public IP{{ ':' }} {{ master_instance_status.instance_data[0].public_ip }}
+       set_fact: openshift_master_public_ip={{ master_instance_status.instance_data[0].public_ip }}
+
+     - name: Fetch information regarding OpenShift's Infra{{ ':' }} {{ openshift_infra_hostname }}
+       gce:
+         instance_names: "{{ openshift_infra_hostname }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       register: infra_instance_status
+
+     - debug: var=infra_instance_status
+
+     - name: Getting OpenShift's Infra Public IP{{ ':' }} {{ infra_instance_status.instance_data[0].public_ip }}
+       set_fact: openshift_infra_public_ip={{ infra_instance_status.instance_data[0].public_ip }}
+
+     - name: Notifying User about the environment
+       mail: host="{{ default_smtp_server }}" port="{{ default_smtp_port }}"
+             username="{{ default_smtp_username }}" password="{{ default_smtp_password }}"
+             subject="TestDrive{{ ':' }} OpenShift@Ops"
+             to="{{ email }}" from="LATAM Technology Office"
+             body="Here are the Public IP's for your Host\nOpenShift's Master IP{{ ':' }} {{ openshift_master_public_ip }}\nOpenShift's InfraNode IP{{ ':' }} {{ openshift_infra_public_ip }}\n\n\nPlease, run the command (as root){{ ':' }}\n# ansible-playbook /root/setup_openshift_ips.yaml\n\nAfter that you may log into your server{{ ':' }}\n# ssh {{ ssh_default_image_user }}@master.testdrive.com (password{{ ':' }} {{ ssh_default_image_password }})"
+       ignore_errors: True

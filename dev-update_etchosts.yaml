@@ -1,0 +1,67 @@
+---
+- name: Fetch Dev environment and update file{{ ':' }} /etc/hosts
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  become: True
+  vars:
+     domain: testdrive.com
+     common_cloudapps:
+        - gogs
+        - jenkins
+        - nexus
+        - sonarqube
+        - tower
+        - cloudforms
+        - hawkular-metrics
+        - git-rhmap-core
+        - nagios-rhmap-core
+        - rhmap
+        - mbaas-rhmap-mbaas
+        - docker
+        - registry
+        - cake
+        - locust
+        - business-central
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - dev-openshift-definition.info
+  tasks:
+     - include: commons/setting_defaults.yaml
+
+#### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
+##### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
+     - name: Fetch information regarding OpenShift's Master{{ ':' }} {{ master_definition.hostname }}
+       gce:
+         instance_names: "{{ master_definition.hostname }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       register: master_instance_status
+
+     - name: Getting OpenShift's Master Public IP{{ ':' }} {{ master_instance_status.instance_data[0].public_ip }}
+       set_fact: openshift_master_public_ip={{ master_instance_status.instance_data[0].public_ip }}
+
+     - name: Writing into /etc/hosts{{ ':' }} {{ openshift_master_public_ip }} master.testdrive.com
+       lineinfile: dest=/etc/hosts state=present regexp="master.{{ domain }}" line="{{ openshift_master_public_ip }} master.{{ domain }}"
+
+#### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
+##### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA
+
+     - name: Fetch information regarding OpenShift's Infra{{ ':' }} {{ infra_definition.hostname }}
+       gce:
+         instance_names: "{{ infra_definition.hostname }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       register: infra_instance_status
+
+     - name: Getting OpenShift's InfraNode Public IP{{ ':' }} {{ infra_instance_status.instance_data[0].public_ip }}
+       set_fact: openshift_infra_public_ip={{ infra_instance_status.instance_data[0].public_ip }}
+
+     - name: Writing into /etc/hosts{{ ':' }} {{ openshift_infra_public_ip }} myapp.cloudapps.testdrive.com
+       lineinfile: dest=/etc/hosts state=present regexp="{{ item }}.cloudapps.{{ domain }}" line="{{ openshift_infra_public_ip }} {{ item }}.cloudapps.{{ domain }}"
+       with_items: "{{ common_cloudapps }}"
