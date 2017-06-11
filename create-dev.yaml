@@ -157,7 +157,7 @@
        with_items: "{{ node_instance_creation.results }}"
 
      - name: Generating the first version of the inventory file
-       template: src=template/ansible_hosts.j2 dest=/tmp/ansible_hosts.j2
+       template: src=templates/ansible_hosts.j2 dest=/tmp/ansible_hosts.j2
 
      - name: Add the hostname into the temporary inventory{{ ':' }} {{ master_definition.hostname }} into masters section
        lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[masters\]" state="present" line="{{ master_definition.hostname }} openshift_public_hostname=master.testdrive.com"
@@ -196,7 +196,7 @@
          - prepare_master
 
     - name: Generating a list of repository for all hosts
-      template: src=template/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
+      template: src=templates/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
       tags:
          - prepare_master
 
@@ -289,7 +289,7 @@
          - prepare
 
     - name: Generating a list of repository for all hosts
-      template: src=template/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
+      template: src=templates/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
       tags:
          - prepare
 

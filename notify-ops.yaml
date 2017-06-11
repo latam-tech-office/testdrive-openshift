@@ -61,10 +61,6 @@
      - name: Getting OpenShift's Infra Public IP{{ ':' }} {{ infra_instance_status.instance_data[0].public_ip }}
        set_fact: openshift_infra_public_ip={{ infra_instance_status.instance_data[0].public_ip }}
 
-     - name: Notifying User about the environment
-       mail: host="{{ default_smtp_server }}" port="{{ default_smtp_port }}"
-             username="{{ default_smtp_username }}" password="{{ default_smtp_password }}"
-             subject="TestDrive{{ ':' }} OpenShift@Ops"
-             to="{{ email }}" from="LATAM Technology Office"
-             body="Here are the Public IP's for your Host\nOpenShift's Master IP{{ ':' }} {{ openshift_master_public_ip }}\nOpenShift's InfraNode IP{{ ':' }} {{ openshift_infra_public_ip }}\n\n\nPlease, run the command (as root){{ ':' }}\n# ansible-playbook /root/setup_openshift_ips.yaml\n\nAfter that you may log into your server{{ ':' }}\n# ssh {{ ssh_default_image_user }}@master.testdrive.com (password{{ ':' }} {{ ssh_default_image_password }})"
-       ignore_errors: True
+     - include: commons/ops-mail.yaml
+       tags:
+          - mail

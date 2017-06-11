@@ -67,14 +67,7 @@
      - name: Getting OpenShift's Infra Public IP{{ ':' }} {{ infra_instance_status.instance_data[0].public_ip }}
        set_fact: openshift_infra_public_ip={{ infra_instance_status.instance_data[0].public_ip }}
 
-     - name: Notifying User about the environment
-       mail: host="{{ default_smtp_server }}" port="{{ default_smtp_port }}"
-             username="{{ default_smtp_username }}" password="{{ default_smtp_password }}"
-             subject="TestDrive{{ ':' }} OpenShift@Dev"
-             to="{{ email }}" from="LATAM Technology Office"
-             body="Here are the Public IP's for your Host\nOpenShift's Master IP{{ ':' }} {{ openshift_master_public_ip }}\nOpenShift's InfraNode IP{{ ':' }} {{ openshift_infra_public_ip }}\n\n\nPlease, run the command (as root){{ ':' }}\n# ansible-playbook /root/setup_openshift_ips.yaml\n\n...and then, you might be access your OpenShift at\nhttps{{ ':' }}//master.testdrive.com:8443\n(Username{{ ':' }} {{ email }}  Password{{ ':' }} {{ user_id }})"
-       ignore_errors: True
-
+     - include: commons/dev-mail.yaml
 
 - name: Create a user in OpenShift TestDrive@Dev
   hosts: openshift_master_group

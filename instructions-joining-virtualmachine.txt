@@ -1,0 +1,8 @@
+In order to joining both files into one in order to import later into VirtualBox, please run the following:
+
+for Windows Users:
+copy /b redhat-ocp-testdrive.ova-partaa+redhat-ocp-testdrive.ova-partab redhat-ocp.testdrive.ova
+
+
+for Unix Users:
+cat redhat-ocp-testdrive.ova-partaa redhat-ocp-testdrive.ova-partab > redhat-ocp.testdrive.ova

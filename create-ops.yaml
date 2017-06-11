@@ -11,11 +11,18 @@
      attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
   tasks:
      - include: commons/setting_defaults.yaml
+       tags:
+          - always
+
      - include: commons/check_mail_settings.yaml
+       tags:
+          - always
 
      - name: email is not defined
        fail: msg="email is not defined"
        when: email is not defined
+       tags:
+          - always
 
 ### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
 #### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
@@ -23,21 +30,36 @@
        set_fact: line_selected={{ item }}
        with_items: "{{ attendees }}"
        when: email in item
+       tags:
+          - always
 
      - fail: msg="{{ email }} wasn't found into file ops-attendees.txt"
        when: line_selected is not defined
+       tags:
+          - always
 
      - set_fact: user_id={{ line_selected.split(',')[0] }}
+       tags:
+         - always
+
      - set_fact: name={{ line_selected.split(',')[1] }}
+       tags:
+          - always
 
      - name: Defining OpenShift's Master{{ ':' }} {{ user_id }}-master
        set_fact: openshift_master="{{ user_id }}-master"
+       tags:
+          - always
 
      - name: Defining OpenShift's Infra{{ ':' }} {{ user_id }}-infra
        set_fact: openshift_infra="{{ user_id }}-infra"
+       tags:
+          - always
 
      - name: Defining OpenShift's Node{{ ':' }} {{ user_id }}-node
        set_fact: openshift_node="{{ user_id }}-node"
+       tags:
+          - always
 
 ### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
 #### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
@@ -208,7 +230,7 @@
        ignore_errors: True
 
      - name: Generating a list of repository for all hosts
-       template: src=template/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
+       template: src=templates/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
 
 ### FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS  
 #### FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS 
@@ -243,11 +265,7 @@
          project_id: "{{ gce_project_id }}"
          pem_file: "{{ gce_credentials_file }}"
          service_account_email: "{{ gce_service_account_email }}"
-         
-     - name: Notifying User about the environment
-       mail: host="{{ default_smtp_server }}" port="{{ default_smtp_port }}"
-             username="{{ default_smtp_username }}" password="{{ default_smtp_password }}"
-             subject="TestDrive{{ ':' }} OpenShift@Ops"
-             to="{{ email }}" from="LATAM Technology Office"
-             body="Here are the Public IP's for your Host\nOpenShift's Master IP{{ ':' }} {{ openshift_master_public_ip }}\nOpenShift's InfraNode IP{{ ':' }} {{ openshift_infra_public_ip }}\n\n\nPlease, run the command (as root){{ ':' }}\n# ansible-playbook /root/setup_openshift_ips.yaml\n\nAfter that you may log into your server{{ ':' }}\n# ssh {{ ssh_default_image_user }}@master.testdrive.com (password{{ ':' }} {{ ssh_default_image_password }})"
-       ignore_errors: True         
+
+     - include: commons/ops-mail.yaml
+       tags:
+          - mail

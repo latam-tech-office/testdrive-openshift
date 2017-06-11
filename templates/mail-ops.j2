@@ -1,0 +1,34 @@
+Hello {{ name }},
+
+  You're receiving this because you're enroll in a OpenShft's TestDrive for Operations from Red Hat. The information below it's your environment and it must be used along with a custom VirtualMachine supplied at the begining of this activity.
+  In order to get the VirtualMachine fully working, you need to join 2 splitted files into one before importing into VirtualBox. 
+
+for Windows Users:
+copy /b redhat-ocp-testdrive.ova-partaa+redhat-ocp-testdrive.ova-partab redhat-ocp.testdrive.ova
+
+for Unix Users:
+cat redhat-ocp-testdrive.ova-partaa redhat-ocp-testdrive.ova-partab > redhat-ocp.testdrive.ova
+
+Once you've got your VirtualMachine up and running, follow the procedures below. 
+
+Open a Terminal and become root
+# su -
+Password:  (type: r3dh4t1!)
+
+...and then, execute this Ansible's Playbook
+# ansible-playbook /root/setup_openshift_ips.yaml
+
+Input the following values below:
+OpenShift's Master IP: {{ openshift_master_public_ip }}
+OpenShift's InfraNode IP: {{ openshift_infra_public_ip }}
+
+After that you may log into your server:
+# ssh root@master.testdrive.com (password: r3dh4t1!)
+
+Once you've got into your 3 hosts, each one has prefix that distinguishes from everyone else.
+Your prefix is: {{ user_id }}
+
+Hence, your hosts will be identified as:
+{{ user_id }}-master
+{{ user_id }}-infra
+{{ user_id }}-node

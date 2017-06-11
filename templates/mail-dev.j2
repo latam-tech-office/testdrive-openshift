@@ -1,0 +1,43 @@
+Hello {{ name }},
+
+  You're receiving this because you're enroll in a OpenShft's TestDrive for Developers from Red Hat. The information below it's your environment and it must be used along with a custom VirtualMachine supplied at the begining of this activity.
+  In order to get the VirtualMachine fully working, you need to join 2 splitted files into one before importing into VirtualBox. 
+
+for Windows Users:
+copy /b redhat-ocp-testdrive.ova-partaa+redhat-ocp-testdrive.ova-partab redhat-ocp.testdrive.ova
+
+for Unix Users:
+cat redhat-ocp-testdrive.ova-partaa redhat-ocp-testdrive.ova-partab > redhat-ocp.testdrive.ova
+
+Once you've got your VirtualMachine up and running, follow the procedures below. 
+
+Open a Terminal and become root
+# su -
+Password:  (type: r3dh4t1!)
+
+...and then, execute this Ansible's Playbook
+# ansible-playbook /root/setup_openshift_ips.yaml
+
+Input the following values below:
+OpenShift's Master IP: {{ openshift_master_public_ip }}
+OpenShift's InfraNode IP: {{ openshift_infra_public_ip }}
+
+After that you may open Firefox WebBrowser and input the address
+https://master.testdrive.com:8443
+
+which it's going to open OpenShift's WebConsole. Your credentials are:
+Username: maltron@gmail.com
+Password: maltron
+
+or you can login using OpenShift Client (aka oc) by typing:
+# oc login --username={{ email }} --insecure-skip-tls-verify --server=https://master.testdrive.com:8443
+Authentication required for https://master.testdrive.com:8443 (openshift)
+Username: {{ email }}
+Password: {{ user_id }}
+
+Because you're using a shared environment with everyone in the class, it's important that we distinguish each project. We're going to use your prefix in front of each project. 
+Your prefix is: {{ user_id }}
+
+For example, you will need to create the following projects using your prefix as such:
+# oc new-project {{ user_id }}-tasks-stage --display-name="OpenShift''s Tasks: Stage Site"
+
