@@ -100,7 +100,6 @@
        - git
        - net-tools
        - bind-utils
-       - docker
        - atomic-openshift-excluder
        - atomic-openshift-docker-excluder
        - iptables-services
@@ -152,5 +151,10 @@
 
     - name: Execute a Atomic OpenShift Excluder
       command: atomic-openshift-excluder unexclude
+      tags:
+         - prepare
+
+    - name: Initiating Docker Service
+      service: name=docker state=started
       tags:
          - prepare
