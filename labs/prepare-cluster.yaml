@@ -1,0 +1,156 @@
+---
+- name: (MASTER) Preparing Master to install OpenShift
+  hosts: localhost
+  tasks:
+    - name: Fetching prefix name
+      set_fact: prefix={{ ansible_env.HOSTNAME | regex_replace('-(.*)$','') }}
+      tags:
+         - prepare_master
+
+    - name: Delete any existing public and private keys
+      file: path=/root/.ssh/{{ item }} state=absent
+      with_items: 
+             - id_rsa
+             - id_rsa.pub
+      ignore_errors: True
+
+    - name: Generate keys for Master
+      command: "ssh-keygen -b 4096 -t rsa -f /root/.ssh/id_rsa -q -N \"\""
+      tags:
+         - prepare_master
+
+    - name: Read the content of this key
+      slurp: src=/root/.ssh/id_rsa.pub
+      register: content_encoded
+      tags:
+         - prepare_master
+
+    - name: Define the content of the key
+      set_fact: openshift_master_ssh_key="{{ content_encoded.content | b64decode }}"
+      tags:
+         - prepare_master
+
+    - name: Updating the entire host
+      yum: name="*" state=latest
+      tags:
+         - prepare_master
+
+    - name: Installing OpenShift's Utils
+      yum: name="atomic-openshift-utils" state=latest
+      tags:
+         - prepare_master
+
+    - name: Download ansible_hosts file
+      uri: url=https://raw.githubusercontent.com/latam-tech-office/testdrive-openshift/master/templates/ansible_hosts.j2
+            method=GET status_code=200 creates=True dest=/etc/ansible/hosts
+      tags:
+         - prepare_master
+
+    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-master into masters section
+      lineinfile: dest=/etc/ansible/hosts insertafter="\[masters\]" state="present" line="{{ prefix }}-master openshift_public_hostname=master.testdrive.com"
+      tags:
+        - prepare_master
+
+    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-master into nodes section
+      lineinfile: dest=/etc/ansible/hosts insertafter="\[nodes\]" state="present" line="{{ prefix }}-master"
+      tags:
+        - prepare_master
+
+    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-infra into nodes section
+      lineinfile: dest=/etc/ansible/hosts insertafter="\[nodes\]" state="present" line="{{ prefix }}-infra openshift_node_labels=\"{'host'{{ ':' }} 'infra'}\""
+      tags:
+        - prepare_master
+
+    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-node into nodes section
+      lineinfile: dest=/etc/ansible/hosts insertafter="\[nodes\]" state="present" line="{{ prefix }}-node openshift_node_labels=\"{'host'{{ ':' }} 'apps'}\""
+      tags:
+        - prepare_master
+
+    - name: Adding Master to openshift's group
+      add_host: hostname={{ prefix }}-master groups=openshift master_ssh_key={{ openshift_master_ssh_key }}
+                ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+      tags:
+         - prepare_master
+
+    - name: Adding Infra to openshift's group
+      add_host: hostname={{ prefix }}-infra groups=openshift
+                ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+      tags:
+         - prepare_master
+
+    - name: Adding Node to openshift's group
+      add_host: hostname={{ prefix }}-node groups=openshift
+                ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+      tags:
+         - prepare_master
+
+    - name: Disable 'host_key_checking' in Ansible
+      lineinfile: dest=/etc/ansible/ansible.cfg regexp="host_key_checking" state=present line="host_key_checking = False"
+      tags:
+         - prepare_master
+
+- name: (PREPARE) Preparing all hosts and installing Docker
+  hosts: all
+  vars:
+     docker_device: /dev/sdb
+     docker_device_partition: "{{ docker_device }}1"
+     prereqs_packages:
+       - vim
+       - wget
+       - git
+       - net-tools
+       - bind-utils
+       - docker
+       - atomic-openshift-excluder
+       - atomic-openshift-docker-excluder
+       - iptables-services
+       - bridge-utils
+       - bash-completion
+       - docker
+       - httpd-tools
+  tasks:
+    - name: Fetch Master's Public Key
+      set_fact: openshift_master_ssh_key={{ hostvars['maltron-master']['master_ssh_key'] }}
+      tags:
+         - prepare
+
+    - name: Create OpenShift's Master SSH Key
+      lineinfile: dest=/root/.ssh/authorized_keys state=present create=yes line="{{ openshift_master_ssh_key }}"
+      tags:
+         - prepare
+
+    - name: Updating the entire host
+      yum: name="*" state=latest
+      tags:
+         - prepare
+
+    - name: Installing Basic Applications
+      yum: name="{{ item }}" state=present
+      with_items: "{{ prereqs_packages }}"
+      tags:
+         - prepare
+
+    - name: Create a partition for Docker
+      command: parted {{ docker_device }} --script 'mklabel msdos mkpart primary 0% 100%'
+      tags:
+         - prepare
+
+    - name: Create a VG named docker-vg (used for Docker)
+      lvg: vg=docker-vg pvs={{ docker_device_partition }}
+      tags:
+         - prepare
+
+    - name: Configuring Docker-Storage-Setup first
+      lineinfile: dest=/etc/sysconfig/docker-storage-setup line="VG=docker-vg"
+      tags:
+         - prepare
+
+    - name: Run a Docker-Storage-Setup
+      command: /usr/bin/docker-storage-setup
+      tags:
+         - prepare
+
+    - name: Execute a Atomic OpenShift Excluder
+      command: atomic-openshift-excluder unexclude
+      tags:
+         - prepare
