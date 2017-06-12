@@ -1,0 +1,48 @@
+---
+- name: Reset all configurations from all Nodes
+  hosts: localhost
+  tasks:
+    - name: Fetching prefix name
+      set_fact: prefix={{ ansible_env.HOSTNAME | regex_replace('-(.*)$','') }}
+
+    - name: Adding Master to openshift's group
+      add_host: hostname={{ prefix }}-master groups=openshift
+                ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+      tags:
+         - prepare_master
+
+    - name: Adding Infra to openshift's group
+      add_host: hostname={{ prefix }}-infra groups=openshift
+                ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+      tags:
+         - prepare_master
+
+    - name: Adding Node to openshift's group
+      add_host: hostname={{ prefix }}-node groups=openshift
+                ansible_user=root ansible_password=r3dh4t1! ansible_port=22
+      tags:
+         - prepare_master
+
+
+- name: Removing 
+  hosts: all
+  gather_facts: False
+  tasks:
+    - name: Stopping Docker Services
+      service: name=docker state=stopped
+
+    - name: Deleting all the contents into /var/lib/docker
+      file: path=/var/lib/docker state=absent
+      ignore_errors: True
+
+    - name: Deleting VG named docker-vg
+      lvg: vg=docker-vg pvs=/dev/sdb1 state=absent force=yes
+      ignore_errors: True
+
+    - name: Deleting PV named /dev/sdb1
+      command: pvremove /dev/sdb1
+      ignore_errors: True
+
+    - name: Deleting partition
+      command: parted /dev/sdb --script 'rm 1'
+      ignore_errors: True
