@@ -205,6 +205,24 @@
                  ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
                  ansible_port={{ ssh_default_image_port }}
 
+
+### PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER 
+#### PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER 
+- name: Adding some playbooks for easy each Labs exercise
+  hosts: openshift_master_group
+  gather_facts: False
+  tasks:
+     - name: Create directory /root/labs
+       file: path=/root/labs state=directory 
+
+     - name: Download all playbooks for labs
+       uri: url=https://raw.githubusercontent.com/latam-tech-office/testdrive-openshift/master/labs/{{ item }}
+            method=GET status_code=200 creates=True dest=/root/labs/{{ item }}
+       with_items: 
+             - prepare-cluster.yaml
+             - ansible.cfg
+             - reset-cluster.yaml
+
 ### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 #### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 - name: Preparing all the hosts with a basic configuration
