@@ -23,6 +23,10 @@
       tags:
          - prepare_master
 
+    - name: Deleting some files
+      file: path=/root/.ssh
+      tags:
+         - prepare_master
 
 - name: Removing 
   hosts: all
@@ -30,6 +34,9 @@
   tasks:
     - name: Stopping Docker Services
       service: name=docker state=stopped
+
+    - name: Removing references into /etc/sysconfig/docker-storage
+      copy: dest=/etc/sysconfig/docker-storage content=""
 
     - name: Deleting all the contents into /var/lib/docker
       file: path=/var/lib/docker state=absent
