@@ -6,7 +6,7 @@
   vars_files:
      - gce/authentication
      - gce/defaults
-     - mail/authentication
+     - notification/mail_authentication
   vars:
      attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
   tasks:
@@ -259,7 +259,7 @@
   vars_files:
      - gce/authentication
      - gce/defaults
-     - mail/authentication
+     - notification/mail_authentication
   tasks:
      - include: commons/setting_defaults.yaml
      - include: commons/check_mail_settings.yaml

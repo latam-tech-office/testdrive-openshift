@@ -6,7 +6,7 @@
   vars_files:
      - gce/authentication
      - gce/defaults
-     - mail/authentication
+     - notification/mail_authentication
   vars:
      attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
   tasks:
