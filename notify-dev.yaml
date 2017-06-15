@@ -12,7 +12,6 @@
      attendees: "{{ lookup('file', 'dev-attendees.txt').split('\n') }}"
   tasks:
      - include: commons/setting_defaults.yaml
-     - include: commons/check_mail_settings.yaml
 
      - name: email is not defined
        fail: msg="email is not defined"
@@ -68,6 +67,8 @@
        set_fact: openshift_infra_public_ip={{ infra_instance_status.instance_data[0].public_ip }}
 
      - include: commons/dev-mail.yaml
+       when: default_smtp_server is defined and default_smtp_server is not none and default_smtp_port is defined and default_smtp_port is not none and default_smtp_username is defined and default_smtp_username is not none and default_smtp_password is defined and default_smtp_password is not none
+
 
 - name: Create a user in OpenShift TestDrive@Dev
   hosts: openshift_master_group

@@ -345,6 +345,7 @@
      - gce/authentication
      - gce/defaults
      - dev-openshift-definition.info
+     - notification/slack_authentication
   tasks:
      - include: commons/setting_defaults.yaml
        tags:
@@ -374,3 +375,7 @@
        with_items: "{{ nodes_definition }}"
        tags:
           - final_steps
+
+     - name: Notifying by Slack about sucessfully deletion
+       slack: token={{ default_slack_token }} msg="TestDrive@Dev{{ ':'}} Environment was successfully created"
+       when: default_slack_token is defined and default_slack_token is not none

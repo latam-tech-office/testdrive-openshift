@@ -14,10 +14,6 @@
        tags:
           - always
 
-     - include: commons/check_mail_settings.yaml
-       tags:
-          - always
-
      - name: email is not defined
        fail: msg="email is not defined"
        when: email is not defined
@@ -260,9 +256,9 @@
      - gce/authentication
      - gce/defaults
      - notification/mail_authentication
+     - notification/slack_authentication
   tasks:
      - include: commons/setting_defaults.yaml
-     - include: commons/check_mail_settings.yaml
 
      - name: Removing SSH capability from OpenShift's Infra
        gce_tag:
@@ -285,5 +281,11 @@
          service_account_email: "{{ gce_service_account_email }}"
 
      - include: commons/ops-mail.yaml
+       when: default_smtp_server is defined and default_smtp_server is not none and default_smtp_port is defined and default_smtp_port is not none and default_smtp_username is defined and default_smtp_username is not none and default_smtp_password is defined and default_smtp_password is not none
        tags:
           - mail
+
+     - name: Notifying by Slack about sucessfully creation
+       slack: token={{ default_slack_token }} msg="TestDrive@Ops{{ ':'}} Environment for {{ name }} ({{ user_id }}) was successfully created"
+       when: default_slack_token is defined and default_slack_token is not none
+

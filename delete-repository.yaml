@@ -6,6 +6,7 @@
   vars_files:
      - gce/authentication
      - gce/defaults
+     - notification/slack_authentication
   vars:
      - repository_name: openshift-repository
      - repository_machine_type: n1-standard-2
@@ -34,3 +35,7 @@
          credentials_file: "{{ gce_credentials_file }}"
          service_account_email: "{{ gce_service_account_email }}"
        ignore_errors: True
+
+     - name: Notifying by Slack about sucessfully deletion
+       slack: token={{ default_slack_token }} msg="TestDrive{{ ':' }} {{ repository_name }} was successfully deleted"
+       when: default_slack_token is defined and default_slack_token is not none
