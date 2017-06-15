@@ -1,3 +1,1 @@
-maltron,Mauricio Leal,maltron@gmail.com
-nadin,Nadia Ulanova,nadia.ulanova@gmail.com
-malvarez,Marcio Alvarez,alvarez@gmail.com
+johnprefix,John Doe,john.doe@someemail.com
