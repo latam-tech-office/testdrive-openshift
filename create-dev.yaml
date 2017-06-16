@@ -7,6 +7,7 @@
      - gce/authentication
      - gce/defaults
      - dev-openshift-definition.info
+     - notification/slack_authentication
   tasks:
      - include: commons/setting_defaults.yaml
 
@@ -39,6 +40,10 @@
 
      - name: Update bin/install_openshift.sh to call the right server
        copy: dest=bin/install_openshift.sh content="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {{ ssh_default_image_user }}@{{ openshift_master_public_ip }} \"sudo ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml; ansible-playbook /root/postinstall/post-install.yaml; ansible-playbook /root/postinstall/create_persistentvolumes.yaml -e nfs_server={{ openshift_master_private_ip }}\""
+
+     - name: Add a Slack Notification at end of OpenShift's installation
+       lineinfile: path=bin/install_openshift.sh insertafter=EOF line="; ansible localhost -m slack -a \"token={{ default_slack_token }} msg='TestDrive@Dev{{ '{{' }} '{{ ':' }}' {{ '}}' }} Environment was successfully created'\""
+       when: default_slack_token is defined and default_slack_token is not none
 
      - name: Attaching a Docker storage{{ ':' }} {{ master_definition.hostname }}
        gce_pd:
@@ -375,7 +380,3 @@
        with_items: "{{ nodes_definition }}"
        tags:
           - final_steps
-
-     - name: Notifying by Slack about sucessfully deletion
-       slack: token={{ default_slack_token }} msg="TestDrive@Dev{{ ':'}} Environment was successfully created"
-       when: default_slack_token is defined and default_slack_token is not none
