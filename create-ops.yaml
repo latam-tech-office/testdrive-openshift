@@ -286,6 +286,5 @@
           - mail
 
      - name: Notifying by Slack about sucessfully creation
-       slack: token={{ default_slack_token }} msg="TestDrive@Ops{{ ':'}} Environment for {{ name }} ({{ user_id }}) was successfully created"
+       slack: token={{ default_slack_token }} msg="TestDrive@Ops{{ ':' }} Environment for {{ name }} ({{ user_id }}) was successfully created"
        when: default_slack_token is defined and default_slack_token is not none
-
