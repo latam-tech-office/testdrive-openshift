@@ -26,8 +26,8 @@ After that you may open Firefox WebBrowser and input the address
 https://master.testdrive.com:8443
 
 which it's going to open OpenShift's WebConsole. Your credentials are:
-Username: maltron@gmail.com
-Password: maltron
+Username: {{ email }}
+Password: {{ user_id }}
 
 or you can login using OpenShift Client (aka oc) by typing:
 # oc login --username={{ email }} --insecure-skip-tls-verify --server=https://master.testdrive.com:8443
