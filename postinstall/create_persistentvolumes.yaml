@@ -35,6 +35,36 @@
        - { pv_index: 28, "type": "huge",   pv_size: 50 }
        - { pv_index: 29, "type": "huge",   pv_size: 50 }
        - { pv_index: 30, "type": "huge",   pv_size: 50 }
+       - { pv_index: 31, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 32, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 33, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 34, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 35, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 36, "type": "small",   pv_size: 5 }
+       - { pv_index: 37, "type": "small",   pv_size: 5 }
+       - { pv_index: 38, "type": "small",   pv_size: 5 }
+       - { pv_index: 39, "type": "small",   pv_size: 5 }
+       - { pv_index: 40, "type": "small",   pv_size: 5 }
+       - { pv_index: 41, "type": "regular", pv_size: 10 }
+       - { pv_index: 42, "type": "regular", pv_size: 10 }
+       - { pv_index: 43, "type": "regular", pv_size: 10 }
+       - { pv_index: 44, "type": "regular", pv_size: 10 }
+       - { pv_index: 45, "type": "regular", pv_size: 10 }
+       - { pv_index: 46, "type": "big",     pv_size: 20 }
+       - { pv_index: 47, "type": "big",     pv_size: 20 }
+       - { pv_index: 48, "type": "big",     pv_size: 20 }
+       - { pv_index: 49, "type": "big",     pv_size: 20 }
+       - { pv_index: 50, "type": "big",     pv_size: 20 }
+       - { pv_index: 51, "type": "large",   pv_size: 25 }
+       - { pv_index: 52, "type": "large",   pv_size: 25 }
+       - { pv_index: 53, "type": "large",   pv_size: 25 }
+       - { pv_index: 54, "type": "large",   pv_size: 25 }
+       - { pv_index: 55, "type": "large",   pv_size: 25 }
+       - { pv_index: 56, "type": "huge",   pv_size: 50 }
+       - { pv_index: 57, "type": "huge",   pv_size: 50 }
+       - { pv_index: 58, "type": "huge",   pv_size: 50 }
+       - { pv_index: 59, "type": "huge",   pv_size: 50 }
+       - { pv_index: 60, "type": "huge",   pv_size: 50 }
     nfs_server: 192.168.0.100
     nfs_path_prefix: /var/storage/local
   tasks:
