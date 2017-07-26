@@ -65,6 +65,66 @@
        - { pv_index: 58, "type": "huge",   pv_size: 50 }
        - { pv_index: 59, "type": "huge",   pv_size: 50 }
        - { pv_index: 60, "type": "huge",   pv_size: 50 }
+       - { pv_index: 61, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 62, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 63, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 64, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 65, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 66, "type": "small",   pv_size: 5 }
+       - { pv_index: 67, "type": "small",   pv_size: 5 }
+       - { pv_index: 68, "type": "small",   pv_size: 5 }
+       - { pv_index: 69, "type": "small",   pv_size: 5 }
+       - { pv_index: 70, "type": "small",   pv_size: 5 }
+       - { pv_index: 71, "type": "regular", pv_size: 10 }
+       - { pv_index: 72, "type": "regular", pv_size: 10 }
+       - { pv_index: 73, "type": "regular", pv_size: 10 }
+       - { pv_index: 74, "type": "regular", pv_size: 10 }
+       - { pv_index: 75, "type": "regular", pv_size: 10 }
+       - { pv_index: 76, "type": "big",     pv_size: 20 }
+       - { pv_index: 77, "type": "big",     pv_size: 20 }
+       - { pv_index: 78, "type": "big",     pv_size: 20 }
+       - { pv_index: 79, "type": "big",     pv_size: 20 }
+       - { pv_index: 80, "type": "big",     pv_size: 20 }
+       - { pv_index: 81, "type": "large",   pv_size: 25 }
+       - { pv_index: 82, "type": "large",   pv_size: 25 }
+       - { pv_index: 83, "type": "large",   pv_size: 25 }
+       - { pv_index: 84, "type": "large",   pv_size: 25 }
+       - { pv_index: 85, "type": "large",   pv_size: 25 }
+       - { pv_index: 86, "type": "huge",   pv_size: 50 }
+       - { pv_index: 87, "type": "huge",   pv_size: 50 }
+       - { pv_index: 88, "type": "huge",   pv_size: 50 }
+       - { pv_index: 89, "type": "huge",   pv_size: 50 }
+       - { pv_index: 80, "type": "huge",   pv_size: 50 }
+       - { pv_index: 81, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 82, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 83, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 84, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 85, "type": "tiny",    pv_size: 1 }
+       - { pv_index: 86, "type": "small",   pv_size: 5 }
+       - { pv_index: 87, "type": "small",   pv_size: 5 }
+       - { pv_index: 88, "type": "small",   pv_size: 5 }
+       - { pv_index: 89, "type": "small",   pv_size: 5 }
+       - { pv_index: 90, "type": "small",   pv_size: 5 }
+       - { pv_index: 91, "type": "regular", pv_size: 10 }
+       - { pv_index: 92, "type": "regular", pv_size: 10 }
+       - { pv_index: 93, "type": "regular", pv_size: 10 }
+       - { pv_index: 94, "type": "regular", pv_size: 10 }
+       - { pv_index: 95, "type": "regular", pv_size: 10 }
+       - { pv_index: 96, "type": "big",     pv_size: 20 }
+       - { pv_index: 97, "type": "big",     pv_size: 20 }
+       - { pv_index: 98, "type": "big",     pv_size: 20 }
+       - { pv_index: 99, "type": "big",     pv_size: 20 }
+       - { pv_index: 100, "type": "big",     pv_size: 20 }
+       - { pv_index: 101, "type": "large",   pv_size: 25 }
+       - { pv_index: 102, "type": "large",   pv_size: 25 }
+       - { pv_index: 103, "type": "large",   pv_size: 25 }
+       - { pv_index: 104, "type": "large",   pv_size: 25 }
+       - { pv_index: 105, "type": "large",   pv_size: 25 }
+       - { pv_index: 106, "type": "huge",   pv_size: 50 }
+       - { pv_index: 107, "type": "huge",   pv_size: 50 }
+       - { pv_index: 108, "type": "huge",   pv_size: 50 }
+       - { pv_index: 109, "type": "huge",   pv_size: 50 }
+       - { pv_index: 110, "type": "huge",   pv_size: 50 }
     nfs_server: 192.168.0.100
     nfs_path_prefix: /var/storage/local
   tasks:
