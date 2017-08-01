@@ -1,0 +1,60 @@
+---
+- name: Installing Environment with all the necessary Applications for CI/CD (TestDrive purposes)
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+     your_prefix: maltron
+  tasks:
+     - name: Deleting an existing project
+       command: oc delete project {{ item }}
+       with_items: 
+          - "{{ your_prefix }}-tasks-stage"
+          - "{{ your_prefix }}-tasks-development"
+          - "{{ your_prefix }}-tooling"
+       ignore_errors: True
+
+     - name: Creating a Project{{ ':' }} {{ your_prefix }}-tasks-stage
+       command: oc new-project {{ your_prefix }}-tasks-stage --display-name="OpenShift's Tasks{{ ':' }} Stage Site"
+       register: create_namespace
+       until: create_namespace.rc == 0
+       retries: 60
+       delay: 10
+
+     - name: Creating a Project{{ ':' }} {{ your_prefix }}-tasks-development
+       command: oc new-project {{ your_prefix }}-tasks-development --display-name="OpenShift's Tasks{{ ':' }} Development Site"
+       register: create_namespace
+       until: create_namespace.rc == 0
+       retries: 60
+       delay: 10
+
+     - name: Adjust policy for Jenkins to create Pods in other namespaces
+       command: oc policy add-role-to-user edit system:serviceaccount:{{ your_prefix }}-tooling:jenkins -n {{ item }}
+       with_items: 
+           - "{{ your_prefix }}-tasks-stage"
+           - "{{ your_prefix }}-tasks-development"
+
+     - name: Creating a Project{{ ':' }} {{ your_prefix }}-tooling
+       command: oc new-project {{ your_prefix }}-tooling --display-name="Developer Tooling"
+       register: create_namespace
+       until: create_namespace.rc == 0
+       retries: 60
+       delay: 10
+
+     - name: Creating Gogs (GIT Server)
+       command: oc new-app -f http://bit.ly/openshift-gogs-persistent-template -p HOSTNAME={{ your_prefix }}-gogs.cloudapps.testdrive.com -p SKIP_TLS_VERIFY=true --namespace {{ your_prefix }}-tooling
+
+     - name: Creating Jenkins (CI/CD Server)
+       command: oc new-app jenkins-ephemeral --namespace {{ your_prefix }}-tooling
+
+     - name: Creating Database for SonarQube
+       command: oc new-app postgresql-ephemeral -p POSTGRESQL_USER=sonar -p POSTGRESQL_PASSWORD=sonar -p POSTGRESQL_DATABASE=sonar --namespace {{ your_prefix }}-tooling
+
+     - name: Creating SonarQube
+       command: oc new-app docker.io/openshiftdemos/sonarqube:6.0 -e SONARQUBE_JDBC_USERNAME=sonar -e SONARQUBE_JDBC_PASSWORD=sonar -e SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar --namespace {{ your_prefix }}-tooling
+
+     - name: Create a Router to SonarQube
+       command: oc expose service/sonarqube --namespace {{ your_prefix }}-tooling
+
+     - name: Creating Nexus
+       command: oc new-app https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml --namespace {{ your_prefix }}-tooling

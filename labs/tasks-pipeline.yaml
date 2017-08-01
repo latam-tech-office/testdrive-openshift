@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: tasks-pipeline
+spec:
+  triggers:
+    - type: GitHub
+      github:
+        secret: ${WEBHOOK_SECRET}
+    - type: Generic
+      generic:
+        secret: ${WEBHOOK_SECRET}
+  runPolicy: Serial
+  source:
+    type: None
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfile: |-
+        node('maven') {
+           // define commands
+           def mvnCmd = "mvn -s configuration/cicd-settings.xml"
+
+           stage ('Build') {
+             git branch: 'eap-7', url: 'http://gogs:3000/demo/openshift-tasks.git'
+             sh "${mvnCmd} clean install -DskipTests=true"
+           }
+
+           stage ('Test and Analysis') {
+             parallel (
+                 'Test': {
+                     sh "${mvnCmd} test"
+                     step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+                 },
+                 'Static Analysis': {
+                     sh "${mvnCmd} jacoco:report sonar:sonar -Dsonar.host.url=http://sonarqube:9000 -DskipTests=true"
+                 }
+             )
+           }
+
+           stage ('Push to Nexus') {
+            sh "${mvnCmd} deploy -DskipTests=true"
+           }
+
+           stage ('Deploy DEV') {
+             sh "rm -rf oc-build && mkdir -p oc-build/deployments"
+             sh "cp target/openshift-tasks.war oc-build/deployments/ROOT.war"
+             sh "oc project <YOUR PREFIX>-tasks-development"
+             // clean up. keep the image stream
+             sh "oc delete bc,dc,svc,route -l app=tasks -n <YOUR PREFIX>-tasks-development"
+             // create build. override the exit code since it complains about exising imagestream
+             sh "oc new-build --name=tasks --image-stream=jboss-eap70-openshift --binary=true --labels=app=tasks -n <YOUR PREFIX>-tasks-development || true"
+             // build image
+             sh "oc start-build tasks --from-dir=oc-build --wait=true -n <YOUR PREFIX>-tasks-development"
+             // deploy image
+             sh "oc new-app tasks:latest -n <YOUR PREFIX>-tasks-development"
+             sh "oc expose svc/tasks -n <YOUR PREFIX>-tasks-development"
+           }
+
+
+           stage ('Deploy STAGE') {
+             timeout(time:5, unit:'MINUTES') {
+                input message: "Promote to STAGE?", ok: "Promote"
+             }
+
+             def v = version()
+             // tag for stage
+             sh "oc tag <YOUR PREFIX>-tasks-development/tasks:latest <YOUR PREFIX>-tasks-stage/tasks:${v}"
+             sh "oc project <YOUR PREFIX>-tasks-stage"
+             // clean up. keep the imagestream
+             sh "oc delete bc,dc,svc,route -l app=tasks -n <YOUR PREFIX>-tasks-stage"
+             // deploy stage image
+             sh "oc new-app tasks:${v} -n <YOUR PREFIX>-tasks-stage"
+             sh "oc expose svc/tasks -n <YOUR PREFIX>-tasks-stage"
+           }
+        }
+
+        def version() {
+          def matcher = readFile('pom.xml') =~ '<version>(.+)</version>'
+          matcher ? matcher[0][1] : null
+        }
+
+    type: JenkinsPipeline
+    type: Generic
+status:
+  lastVersion: 0
