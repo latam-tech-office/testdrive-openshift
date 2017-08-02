@@ -190,6 +190,7 @@
        add_host: groups=openshift_master_group hostname={{ openshift_master_public_ip }}
                  ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
                  ansible_port={{ ssh_default_image_port }}
+                 user_id={{ user_id }}
 
      - name: Adding OpenShift's Infra into group{{ ':' }} openshift_hosts
        add_host: groups=openshift_infra_group hostname={{ openshift_infra_public_ip }}
@@ -218,6 +219,9 @@
              - prepare-cluster.yaml
              - ansible.cfg
              - reset-cluster.yaml
+
+     - name: Adapt prepare-cluster.yaml to run with current user
+       replace: path=/root/labs/prepare-cluster.yaml regexp="maltron" replace="{{ user_id }}"
 
 ### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 #### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
