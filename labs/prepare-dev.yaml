@@ -47,6 +47,9 @@
      - name: Creating Jenkins (CI/CD Server)
        command: oc new-app jenkins-ephemeral --namespace {{ your_prefix }}-tooling
 
+     - name: Applying a variable MAVEN_SLAVE_IMAGE pointing to a working Jenkins's Slave Image
+       command: oc env dc/jenkins MAVEN_SLAVE_IMAGE=registry.access.redhat.com/openshift3/jenkins-slave-maven-rhel7:3.3-19 --namespace {{ your_prefix }}-tooling
+
      - name: Creating Database for SonarQube
        command: oc new-app postgresql-ephemeral -p POSTGRESQL_USER=sonar -p POSTGRESQL_PASSWORD=sonar -p POSTGRESQL_DATABASE=sonar --namespace {{ your_prefix }}-tooling
 
