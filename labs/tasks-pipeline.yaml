@@ -6,10 +6,10 @@ spec:
   triggers:
     - type: GitHub
       github:
-        secret: ${WEBHOOK_SECRET}
+        secret: githubtasks
     - type: Generic
       generic:
-        secret: ${WEBHOOK_SECRET}
+        secret: generictasks
   runPolicy: Serial
   source:
     type: None

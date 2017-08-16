@@ -56,6 +56,7 @@
        set_fact: gogs_url="http{{ ':' }}//gogs.{{ your_prefix }}-tooling.svc.cluster.local:3000"
        tags: 
          - gogs
+         - gogs_webhook
 
      - name: Wait for Gogs to be ready{{ ":" }} {{ gogs_url }}
        uri: url="{{ gogs_url }}" status_code=200 
@@ -103,6 +104,14 @@
            - json_result.status != 504
        tags:
         - gogs
+
+     - name: Add a WebHook to trigger the Pipeline
+       uri: method=POST body_format=json url="{{ gogs_url }}/api/v1/repos/{{ username }}/openshift-tasks/hooks" status_code=201
+            user={{ username }} password={{ password }} force_basic_auth=yes
+            body="{\"type\"{{ ":" }}\"gogs\",\"config\"{{ ":" }}{\"url\"{{ ":" }}\"https://openshift.default.svc.cluster.local/oapi/v1/namespaces/{{ your_prefix }}-tooling/buildconfigs/tasks-pipeline/webhooks/generictasks/generic\",\"content_type\"{{ ":" }}\"json\"},\"events\"{{ ":" }}[\"push\"],\"active\"{{ ":" }}true}"
+       tags:
+        - gogs
+        - gogs_webhook
 
      - name: Creating Jenkins (CI/CD Server)
        command: oc new-app jenkins-ephemeral --namespace {{ your_prefix }}-tooling
