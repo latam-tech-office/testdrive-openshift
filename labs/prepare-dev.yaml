@@ -4,6 +4,8 @@
   connection: local
   gather_facts: False
   vars:
+     username: demo
+     password: r3dh4t1!
      your_prefix: maltron
   tasks:
      - name: Deleting an existing project
@@ -13,6 +15,8 @@
           - "{{ your_prefix }}-tasks-development"
           - "{{ your_prefix }}-tooling"
        ignore_errors: True
+       tags:
+         - gogs
 
      - name: Creating a Project{{ ':' }} {{ your_prefix }}-tasks-stage
        command: oc new-project {{ your_prefix }}-tasks-stage --display-name="OpenShift's Tasks{{ ':' }} Stage Site"
@@ -40,15 +44,71 @@
        until: create_namespace.rc == 0
        retries: 60
        delay: 10
+       tags:
+         - gogs
 
      - name: Creating Gogs (GIT Server)
        command: oc new-app -f http://bit.ly/openshift-gogs-persistent-template -p HOSTNAME={{ your_prefix }}-gogs.cloudapps.testdrive.com -p SKIP_TLS_VERIFY=true --namespace {{ your_prefix }}-tooling
+       tags: 
+         - gogs
+
+     - name: Setting Gogs URL
+       set_fact: gogs_url="http{{ ':' }}//gogs.{{ your_prefix }}-tooling.svc.cluster.local:3000"
+       tags: 
+         - gogs
+
+     - name: Wait for Gogs to be ready{{ ":" }} {{ gogs_url }}
+       uri: url="{{ gogs_url }}" status_code=200 
+       register: gogs_wait
+       until: gogs_wait.status == 200
+       retries: 60
+       delay: 10
+       tags: 
+         - gogs
+
+     - name: Wait for Postgresql for Gogs to be Create
+       command: oc get pods --output jsonpath='{$..spec.containers[?(@.name=="gogs-postgresql")]}' --namespace {{ your_prefix }}-tooling
+       register: gogs_postgresql_create
+       until: gogs_postgresql_create.rc == 0
+       retries: 60
+       delay: 10
+       tags:
+        - gogs
+
+     - name: Fetch a page to find CSRF
+       uri: url={{ gogs_url }}/user/sign_up  method=GET status_code=200
+       register: gogs_content
+       tags:
+        - gogs
+
+     - name: Fetch CSRF to submit with a page
+       set_fact: csrf={{ gogs_content.set_cookie | regex_replace("^(.*)_csrf=","") | regex_replace("[;](.*)$", "") }}
+       tags:
+        - gogs
+
+     - name: Create (or Submit) a user{{ ':' }}{{ username }} password{{ ':' }}{{ password }}
+       uri: url={{ gogs_url }}/user/sign_up  method=POST status_code=302
+            method=POST headers="Content-type=application/x-www-form-urlencoded"
+            body="_csrf={{ csrf }}&user_name={{ username }}&email={{ username }}%40demo.com&password={{ password }}&retype={{ password }}"
+       tags:
+        - gogs
+
+     - name: Migrating OpenShift Tasks from GitHub to Gogs
+       uri: method=POST body_format=json url={{ gogs_url }}/api/v1/repos/migrate
+            user={{ username }} password={{ password }} force_basic_auth=yes
+            body="{\"clone_addr\"{{ ":" }}\"https{{ ":" }}//github.com/OpenShiftDemos/openshift-tasks.git\",\"uid\"{{ ":" }} 1,\"repo_name\"{{ ":" }} \"openshift-tasks\"}"
+       register: json_result
+       failed_when:
+           - json_result.status != 201
+           - json_result.status != 504
+       tags:
+        - gogs
 
      - name: Creating Jenkins (CI/CD Server)
        command: oc new-app jenkins-ephemeral --namespace {{ your_prefix }}-tooling
 
-     - name: Applying a variable MAVEN_SLAVE_IMAGE pointing to a working Jenkins's Slave Image
-       command: oc env dc/jenkins MAVEN_SLAVE_IMAGE=registry.access.redhat.com/openshift3/jenkins-slave-maven-rhel7:3.3-19 --namespace {{ your_prefix }}-tooling
+#     - name: Applying a variable MAVEN_SLAVE_IMAGE pointing to a working Jenkins's Slave Image
+#       command: oc env dc/jenkins MAVEN_SLAVE_IMAGE=registry.access.redhat.com/openshift3/jenkins-slave-maven-rhel7:3.3-19 --namespace {{ your_prefix }}-tooling
 
      - name: Creating Database for SonarQube
        command: oc new-app postgresql-ephemeral -p POSTGRESQL_USER=sonar -p POSTGRESQL_PASSWORD=sonar -p POSTGRESQL_DATABASE=sonar --namespace {{ your_prefix }}-tooling
