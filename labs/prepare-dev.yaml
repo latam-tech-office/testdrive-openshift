@@ -7,39 +7,82 @@
      username: demo
      password: r3dh4t1!
      your_prefix: maltron
+     domain: testdrive.com
   tasks:
+     - name: Setting namespace for stage
+       set_fact: stage_namespace="{{ your_prefix }}-tasks-stage"
+       tags:
+          - gogs
+
+     - name: Setting namespace for development
+       set_fact: development_namespace="{{ your_prefix }}-tasks-development"
+       tags:
+          - gogs
+       
+     - name: Setting namespace for tooling
+       set_fact: tooling_namespace="{{ your_prefix }}-tooling"
+       tags:
+          - gogs
+          - gogs_migrate
+
+     - set_fact: gogs_public_url="{{ your_prefix }}-gogs.cloudapps.{{ domain }}"
+       tags:
+          - gogs
+          - gogs_migrate
+
+     - set_fact: stage_namespace="tasks-stage"
+       when: no_prefix is defined and no_prefix | bool
+       tags:
+          - gogs
+
+     - set_fact: development_namespace="tasks-development"
+       when: no_prefix is defined and no_prefix | bool
+       tags:
+          - gogs
+
+     - set_fact: tooling_namespace="tooling"
+       when: no_prefix is defined and no_prefix | bool
+       tags:
+          - gogs
+          - gogs_migrate
+
+     - set_fact: gogs_public_url="gogs.cloudapps.{{ domain }}"
+       when: no_prefix is defined and no_prefix | bool
+       tags:
+          - gogs
+
      - name: Deleting an existing project
        command: oc delete project {{ item }}
        with_items: 
-          - "{{ your_prefix }}-tasks-stage"
-          - "{{ your_prefix }}-tasks-development"
-          - "{{ your_prefix }}-tooling"
+          - "{{ stage_namespace }}"
+          - "{{ development_namespace }}"
+          - "{{ tooling_namespace }}"
        ignore_errors: True
        tags:
          - gogs
 
-     - name: Creating a Project{{ ':' }} {{ your_prefix }}-tasks-stage
-       command: oc new-project {{ your_prefix }}-tasks-stage --display-name="OpenShift's Tasks{{ ':' }} Stage Site"
+     - name: Creating a Project{{ ':' }} {{ stage_namespace }}
+       command: oc new-project {{ stage_namespace }} --display-name="OpenShift's Tasks{{ ':' }} Stage Site"
        register: create_namespace
        until: create_namespace.rc == 0
        retries: 60
        delay: 10
 
-     - name: Creating a Project{{ ':' }} {{ your_prefix }}-tasks-development
-       command: oc new-project {{ your_prefix }}-tasks-development --display-name="OpenShift's Tasks{{ ':' }} Development Site"
+     - name: Creating a Project{{ ':' }} {{ development_namespace }}
+       command: oc new-project {{ development_namespace }} --display-name="OpenShift's Tasks{{ ':' }} Development Site"
        register: create_namespace
        until: create_namespace.rc == 0
        retries: 60
        delay: 10
 
      - name: Adjust policy for Jenkins to create Pods in other namespaces
-       command: oc policy add-role-to-user edit system:serviceaccount:{{ your_prefix }}-tooling:jenkins -n {{ item }}
+       command: oc policy add-role-to-user edit system:serviceaccount:{{ tooling_namespace }}:jenkins -n {{ item }}
        with_items: 
-           - "{{ your_prefix }}-tasks-stage"
-           - "{{ your_prefix }}-tasks-development"
+           - "{{ stage_namespace }}"
+           - "{{ development_namespace }}"
 
-     - name: Creating a Project{{ ':' }} {{ your_prefix }}-tooling
-       command: oc new-project {{ your_prefix }}-tooling --display-name="Developer Tooling"
+     - name: Creating a Project{{ ':' }} {{ tooling_namespace }}
+       command: oc new-project {{ tooling_namespace }} --display-name="Developer Tooling"
        register: create_namespace
        until: create_namespace.rc == 0
        retries: 60
@@ -47,16 +90,34 @@
        tags:
          - gogs
 
-     - name: Creating Gogs (GIT Server)
-       command: oc new-app -f http://bit.ly/openshift-gogs-persistent-template -p HOSTNAME={{ your_prefix }}-gogs.cloudapps.testdrive.com -p SKIP_TLS_VERIFY=true --namespace {{ your_prefix }}-tooling
+     - name: "Creating Gogs (GIT Server): {{ gogs_public_url }}"
+       command: oc new-app -f http://bit.ly/openshift-gogs-persistent-template -p HOSTNAME={{ gogs_public_url }} -p SKIP_TLS_VERIFY=true --namespace {{ tooling_namespace }}
        tags: 
          - gogs
 
+     - name: "Change imagePullPolicy on Gogs to: Always -> IfNotPresent"
+       command: oc patch dc/gogs --patch '{"spec":{"template":{"spec":{"containers":[{"name":"gogs","imagePullPolicy":"IfNotPresent"}]}}}}' --namespace {{ tooling_namespace }}
+       tags:
+          - gogs
+
+     - name: Remove Volume from Gogs
+       command: oc volume dc/gogs --name=gogs-data --remove --namespace {{ tooling_namespace }}
+       when: no_volume is defined and no_volume | bool
+       tags:
+         - gogs
+
+     - name: Remove Volume from Postgresql's Gogs
+       command: oc volume dc/gogs-postgresql --name=gogs-postgres-data --remove --namespace {{ tooling_namespace }}
+       when: no_volume is defined and no_volume | bool
+       tags:
+         - gogs
+
      - name: Setting Gogs URL
-       set_fact: gogs_url="http{{ ':' }}//gogs.{{ your_prefix }}-tooling.svc.cluster.local:3000"
+       set_fact: gogs_url="http{{ ':' }}//gogs.{{ tooling_namespace }}.svc.cluster.local:3000"
        tags: 
          - gogs
          - gogs_webhook
+         - gogs_migrate
 
      - name: Wait for Gogs to be ready{{ ":" }} {{ gogs_url }}
        uri: url="{{ gogs_url }}" status_code=200 
@@ -68,7 +129,7 @@
          - gogs
 
      - name: Wait for Postgresql for Gogs to be Create
-       command: oc get pods --output jsonpath='{$..spec.containers[?(@.name=="gogs-postgresql")]}' --namespace {{ your_prefix }}-tooling
+       command: oc get pods --output jsonpath='{$..spec.containers[?(@.name=="gogs-postgresql")]}' --namespace {{ tooling_namespace }}
        register: gogs_postgresql_create
        until: gogs_postgresql_create.rc == 0
        retries: 60
@@ -95,38 +156,36 @@
         - gogs
 
      - name: Migrating OpenShift Tasks from GitHub to Gogs
-       uri: method=POST body_format=json url={{ gogs_url }}/api/v1/repos/migrate
+       uri: method=POST body_format=json url={{ gogs_url }}/api/v1/repos/migrate status_code=201
             user={{ username }} password={{ password }} force_basic_auth=yes
             body="{\"clone_addr\"{{ ":" }}\"https{{ ":" }}//github.com/OpenShiftDemos/openshift-tasks.git\",\"uid\"{{ ":" }} 1,\"repo_name\"{{ ":" }} \"openshift-tasks\"}"
-       register: json_result
-       failed_when:
-           - json_result.status != 201
-           - json_result.status != 504
+       ignore_errors: True
        tags:
         - gogs
+        - gogs_migrate
 
      - name: Add a WebHook to trigger the Pipeline
        uri: method=POST body_format=json url="{{ gogs_url }}/api/v1/repos/{{ username }}/openshift-tasks/hooks" status_code=201
             user={{ username }} password={{ password }} force_basic_auth=yes
-            body="{\"type\"{{ ":" }}\"gogs\",\"config\"{{ ":" }}{\"url\"{{ ":" }}\"https://openshift.default.svc.cluster.local/oapi/v1/namespaces/{{ your_prefix }}-tooling/buildconfigs/tasks-pipeline/webhooks/generictasks/generic\",\"content_type\"{{ ":" }}\"json\"},\"events\"{{ ":" }}[\"push\"],\"active\"{{ ":" }}true}"
+            body="{\"type\"{{ ":" }}\"gogs\",\"config\"{{ ":" }}{\"url\"{{ ":" }}\"https://openshift.default.svc.cluster.local/oapi/v1/namespaces/{{ tooling_namespace }}/buildconfigs/tasks-pipeline/webhooks/generictasks/generic\",\"content_type\"{{ ":" }}\"json\"},\"events\"{{ ":" }}[\"push\"],\"active\"{{ ":" }}true}"
        tags:
         - gogs
         - gogs_webhook
 
      - name: Creating Jenkins (CI/CD Server)
-       command: oc new-app jenkins-ephemeral --namespace {{ your_prefix }}-tooling
+       command: oc new-app jenkins-ephemeral --namespace {{ tooling_namespace }}
 
 #     - name: Applying a variable MAVEN_SLAVE_IMAGE pointing to a working Jenkins's Slave Image
-#       command: oc env dc/jenkins MAVEN_SLAVE_IMAGE=registry.access.redhat.com/openshift3/jenkins-slave-maven-rhel7:3.3-19 --namespace {{ your_prefix }}-tooling
+#       command: oc env dc/jenkins MAVEN_SLAVE_IMAGE=registry.access.redhat.com/openshift3/jenkins-slave-maven-rhel7:3.3-19 --namespace {{ tooling_namespace }}
 
      - name: Creating Database for SonarQube
-       command: oc new-app postgresql-ephemeral -p POSTGRESQL_USER=sonar -p POSTGRESQL_PASSWORD=sonar -p POSTGRESQL_DATABASE=sonar --namespace {{ your_prefix }}-tooling
+       command: oc new-app postgresql-ephemeral -p POSTGRESQL_USER=sonar -p POSTGRESQL_PASSWORD=sonar -p POSTGRESQL_DATABASE=sonar --namespace {{ tooling_namespace }}
 
      - name: Creating SonarQube
-       command: oc new-app docker.io/openshiftdemos/sonarqube:6.0 -e SONARQUBE_JDBC_USERNAME=sonar -e SONARQUBE_JDBC_PASSWORD=sonar -e SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar --namespace {{ your_prefix }}-tooling
+       command: oc new-app docker.io/openshiftdemos/sonarqube:6.0 -e SONARQUBE_JDBC_USERNAME=sonar -e SONARQUBE_JDBC_PASSWORD=sonar -e SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar --namespace {{ tooling_namespace }}
 
      - name: Create a Router to SonarQube
-       command: oc expose service/sonarqube --namespace {{ your_prefix }}-tooling
+       command: oc expose service/sonarqube --namespace {{ tooling_namespace }}
 
      - name: Creating Nexus
-       command: oc new-app https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml --namespace {{ your_prefix }}-tooling
+       command: oc new-app https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml --namespace {{ tooling_namespace }}
