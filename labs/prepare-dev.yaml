@@ -189,3 +189,8 @@
 
      - name: Creating Nexus
        command: oc new-app https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml --namespace {{ tooling_namespace }}
+
+     - name: Remove Volume from Nexus
+       command: oc volume dc/nexus --name=nexus-data --remove --namespace {{ tooling_namespace }}
+       when: no_volume is defined and no_volume | bool
+
