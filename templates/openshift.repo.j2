@@ -10,9 +10,9 @@ baseurl=http://{{ openshift_repository_ip }}/rhel-7-server-extras-rpms
 enabled=1
 gpgcheck=0
 
-[rhel-7-server-ose-3.5-rpms]
-name=Red Hat Enterprise Linux 7 OSE 3.5
-baseurl=http://{{ openshift_repository_ip }}/rhel-7-server-ose-3.5-rpms
+[rhel-7-server-ose-3.6-rpms]
+name=Red Hat Enterprise Linux 7 OSE 3.6
+baseurl=http://{{ openshift_repository_ip }}/rhel-7-server-ose-3.6-rpms
 enabled=1
 gpgcheck=0
 
@@ -22,8 +22,14 @@ baseurl=http://{{ openshift_repository_ip }}/rhel-7-fast-datapath-rpms
 enabled=1
 gpgcheck=0
 
-[rhel-7-server-rhmap-4.3-rpms]
-name=Red Hat Enterprise RHMAP 4.3.0
-baseurl=http://{{ openshift_repository_ip }}/rhel-7-server-rhmap-4.3-rpms
+[rhel-7-server-rhmap-4.4-rpms]
+name=Red Hat Enterprise RHMAP 4.4.0
+baseurl=http://{{ openshift_repository_ip }}/rhel-7-server-rhmap-4.4-rpms
+enabled=1
+gpgcheck=0
+
+[rhel-7-server-3scale-amp-2.0-rpms]
+name=Red Hat 3Scale API Management 2.0
+baseurl=http://{{ openshift_repository_ip }}/rhel-7-server-3scale-amp-2.0-rpms
 enabled=1
 gpgcheck=0

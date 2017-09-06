@@ -25,10 +25,10 @@
       tags:
          - always
 
-    - fail: msg="redhat_subscription_pool_id is not defined"
-      when: redhat_subscription_pool_id is not defined
-      tags:
-         - always
+#    - fail: msg="redhat_subscription_pool_id is not defined"
+#      when: redhat_subscription_pool_id is not defined
+#      tags:
+#         - always
 
     - set_fact: openshift_repository_name="{{ repository_name }}"
       tags:
@@ -101,12 +101,15 @@
   hosts: all
   gather_facts: False
   vars:
+     subscription_name: "Employee SKU"
+     subscription_type: "Virtual"
      repositories:
          - rhel-7-server-rpms
          - rhel-7-server-extras-rpms
-         - rhel-7-server-ose-3.5-rpms
+         - rhel-7-server-ose-3.6-rpms
          - rhel-7-fast-datapath-rpms
-         - rhel-7-server-rhmap-4.3-rpms
+         - rhel-7-server-rhmap-4.4-rpms
+         - rhel-7-server-3scale-amp-2.0-rpms
      disk_storage: "/dev/sdb"
      disk_storage_partition: "{{ disk_storage }}1"
      disk_storage_directory: "/var/storage/repos"
@@ -149,7 +152,34 @@
       tags:
          - prepare
 
-    - name: RED HAT SUBSCRIPTION{{ ':' }} Attaching a Pool ID
+    - name: RED HAT SUBSCRIPTION:{{ ':' }} Delete a temporary existing file (if exists) /tmp/repositories_available.txt
+      file: path=/tmp/repositories_available.txt state=absent
+      when: redhat_subscription_pool_id is not defined
+      ignore_errors: True
+      tags:
+         - prepare
+
+    - name: RED HAT SUBSCRIPTION:{{ ':' }} List of all possible repositories available
+      shell: subscription-manager list --available > /tmp/repositories_available.txt
+      when: redhat_subscription_pool_id is not defined
+      tags:
+         - prepare
+
+    - name: "RED HAT SUBSCRIPTION: Fetching information about the subscription: {{ subscription_name }} type: {{ subscription_type }}"
+      command: "sed -n '/Subscription Name:   {{ subscription_name }}/{p; :loop n; p; /System Type:         {{ subscription_type }}/q; b loop}' /tmp/repositories_available.txt"
+      register: subscription_info
+      when: redhat_subscription_pool_id is not defined
+      tags: 
+         - prepare
+
+    - name: RED HAT SUBSCRIPTION:{{ ':' }} Fetching Pool ID in this subscription
+      set_fact: redhat_subscription_pool_id={{ subscription_info.stdout | regex_replace("(?s)^.*?Pool ID:\s+", "") |
+                                                                    regex_replace("(?s)\\n.*$","") }}
+      when: redhat_subscription_pool_id is not defined
+      tags:
+         - prepare
+
+    - name: RED HAT SUBSCRIPTION{{ ':' }} Attaching a Pool ID{{ ':' }} {{ redhat_subscription_pool_id }}
       command: subscription-manager attach --pool={{ redhat_subscription_pool_id }}
       tags:
          - prepare
