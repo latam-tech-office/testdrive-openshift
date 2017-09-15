@@ -172,8 +172,25 @@
         - gogs
         - gogs_webhook
 
-     - name: Creating Jenkins (CI/CD Server)
-       command: oc new-app jenkins-ephemeral --namespace {{ tooling_namespace }}
+     - name: Creating Jenkins (CI/CD Server) -Persistent-
+       command: oc new-app jenkins-persistent -p ENABLE_OAUTH=true --namespace {{ tooling_namespace }}
+       when: no_volume is not defined
+
+     - name: Creating Jenkins (CI/CD Server) -Ephemeral-
+       command: oc new-app jenkins-ephemeral -p ENABLE_OAUTH=true --namespace {{ tooling_namespace }}
+       when: no_volume is defined and no_volume | bool
+
+     - name: (NO PREFIX) Deleting original Jenkins Route
+       command: oc delete route/jenkins --namespace {{ tooling_namespace }}
+       when: no_prefix is defined and no_prefix | bool
+
+     - name: (NO PREFIX) Creating a simpler Jenkins Route
+       command: oc expose service/jenkins --hostname=jenkins.cloudapps.{{ domain }}
+       when: no_prefix is defined and no_prefix | bool
+
+     - name: (NO PREFIX) Patch a Route
+       command: oc patch route/jenkins --patch '{"spec"{{ ':' }}{"tls"{{ ':' }}{"insecureEdgeTerminationPolicy"{{ ':' }} "Redirect","termination"{{ ':' }} "edge"}}}' --namespace {{ tooling_namespace }}
+       when: no_prefix is defined and no_prefix | bool
 
 #     - name: Applying a variable MAVEN_SLAVE_IMAGE pointing to a working Jenkins's Slave Image
 #       command: oc env dc/jenkins MAVEN_SLAVE_IMAGE=registry.access.redhat.com/openshift3/jenkins-slave-maven-rhel7:3.3-19 --namespace {{ tooling_namespace }}
@@ -184,11 +201,24 @@
      - name: Creating SonarQube
        command: oc new-app docker.io/openshiftdemos/sonarqube:6.0 -e SONARQUBE_JDBC_USERNAME=sonar -e SONARQUBE_JDBC_PASSWORD=sonar -e SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar --namespace {{ tooling_namespace }}
 
-     - name: Create a Router to SonarQube
+     - name: (NO PREFIX) Create a Router to SonarQube with a simpler Route
+       command: oc expose service/sonarqube --hostname=sonarqube.cloudapps.{{ domain }} --namespace {{ tooling_namespace }}
+       when: no_prefix is defined and no_prefix | bool
+
+     - name: (NO PREFIX) Create a Router to SonarQube
        command: oc expose service/sonarqube --namespace {{ tooling_namespace }}
+       when: no_prefix is not defined
 
      - name: Creating Nexus
        command: oc new-app https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml --namespace {{ tooling_namespace }}
+
+     - name: (NO PREFIX) Removing original Nexus route
+       command: oc delete route/nexus --namespace {{ tooling_namespace }}
+       when: no_prefix is defined and no_prefix | bool
+
+     - name: (NO PREFIX) Creating a simple route for Nexus
+       command: oc expose service/nexus --hostname=nexus.cloudapps.{{ domain }} --namespace {{ tooling_namespace }}
+       when: no_prefix is defined and no_prefix | bool
 
      - name: Remove Volume from Nexus
        command: oc volume dc/nexus --name=nexus-data --remove --namespace {{ tooling_namespace }}
