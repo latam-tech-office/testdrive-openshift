@@ -1,0 +1,10 @@
+- name: Generating email's message for user{{ ':' }} {{ name }}
+  template: src=templates/mail-cicd.j2 dest=/tmp/mail-dev.txt
+
+- name: Notifying User about the environment
+  mail: host="{{ default_smtp_server }}" port="{{ default_smtp_port }}"
+        username="{{ default_smtp_username }}" password="{{ default_smtp_password }}"
+        subject="TestDrive{{ ':' }} Continuous Integration / Continuous Delivery"
+        to="{{ email }}" from="LATAM Technology Office"
+        body="{{ lookup('file','/tmp/mail-dev.txt') }}"
+  ignore_errors: True

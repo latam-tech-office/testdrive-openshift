@@ -1,0 +1,39 @@
+Hello {{ name }},
+
+  You're receiving this because you're enroll in a OpenShft's TestDrive CI/CD from Red Hat. The information below it's your environment and it must be used along with a custom VirtualMachine supplied at the begining of this activity.
+  In order to get the VirtualMachine fully working, you need to import the image to your VirtualBox.
+
+Once you've got your VirtualMachine up and running, follow the procedures below. 
+
+Open a Terminal and then, execute this Ansible's Playbook
+# ansible-playbook setup_openshift_ips.yaml --ask-sudo-pass
+[DEPRECATION WARNING]: The sudo command line option has been deprecated in favor of the "become" command line 
+arguments. This feature will be removed in version 2.6. Deprecation warnings can be disabled by setting 
+deprecation_warnings=False in ansible.cfg.
+SUDO password:  (type: r3dh4t1!)
+ [WARNING]: Could not match supplied host pattern, ignoring: all
+
+ [WARNING]: provided hosts list is empty, only localhost is available
+
+OpenShift's Master IP: {{ openshift_master_public_ip }}
+OpenShift's InfraNode IP: {{ openshift_infra_public_ip }}
+
+After that you may open Firefox WebBrowser and input the address
+https://master.testdrive.com:8443
+
+which it's going to open OpenShift's WebConsole. Your credentials are:
+Username: {{ email }}
+Password: {{ user_id }}
+
+or you can login using OpenShift Client (aka oc) by typing:
+# oc login --username={{ email }} --insecure-skip-tls-verify --server=https://master.testdrive.com:8443
+Authentication required for https://master.testdrive.com:8443 (openshift)
+Username: {{ email }}
+Password: {{ user_id }}
+
+Because you're using a shared environment with everyone in the class, it's important that we distinguish each project. We're going to use your prefix in front of each project. 
+Your prefix is: {{ user_id }}
+
+For example, you will need to create the following projects using your prefix as such:
+# oc new-project {{ user_id }} --display-name="TestDrive CICD"
+

@@ -1,0 +1,80 @@
+---
+- name: Notify Attendees related environment OpenShift TestDrive@Dev
+  hosts: localhost
+  connection: connection
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - notification/mail_authentication
+     - dev-openshift-definition.info
+  vars:
+     attendees: "{{ lookup('file', 'dev-attendees.txt').split('\n') }}"
+  tasks:
+     - include: commons/setting_defaults.yaml
+
+     - name: email is not defined
+       fail: msg="email is not defined"
+       when: email is not defined
+
+### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+#### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+     - name: Lookup for this email{{ ':' }} {{ email }}
+       set_fact: line_selected={{ item }}
+       with_items: "{{ attendees }}"
+       when: email in item
+
+     - fail: msg="{{ email }} wasn't found into file ops-attendees.txt"
+       when: line_selected is not defined
+
+     - set_fact: user_id={{ line_selected.split(',')[0] }}
+     - set_fact: name={{ line_selected.split(',')[1] }}
+
+### FETCH OPENSHIFT FETCH OPENSHIFT FETCH OPENSHIFT FETCH OPENSHIFT FETCH
+#### FETCH OPENSHIFT FETCH OPENSHIFT FETCH OPENSHIFT FETCH OPENSHIFT FETCH OPENSHIFT 
+     - name: Fetch information regarding OpenShift's Master{{ ':' }} {{ master_definition.hostname }}
+       gce:
+         instance_names: "{{ master_definition.hostname }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       register: master_instance_status
+
+     - debug: var=master_instance_status
+
+     - name: Getting OpenShift's Master Public IP{{ ':' }} {{ master_instance_status.instance_data[0].public_ip }}
+       set_fact: openshift_master_public_ip={{ master_instance_status.instance_data[0].public_ip }}
+
+     - name: Adding OpenShift's Master into group{{ ':' }} openshift_master_group
+       add_host: groups=openshift_master_group hostname={{ openshift_master_public_ip }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}
+                 openshift_username={{ email }} openshift_password={{ user_id }}
+
+     - name: Fetch information regarding OpenShift's Infra{{ ':' }} {{ infra_definition.hostname }}
+       gce:
+         instance_names: "{{ infra_definition.hostname }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       register: infra_instance_status
+
+     - debug: var=infra_instance_status
+
+     - name: Getting OpenShift's Infra Public IP{{ ':' }} {{ infra_instance_status.instance_data[0].public_ip }}
+       set_fact: openshift_infra_public_ip={{ infra_instance_status.instance_data[0].public_ip }}
+
+     - include: commons/dev-cicd.yaml
+       when: default_smtp_server is defined and default_smtp_server is not none and default_smtp_port is defined and default_smtp_port is not none and default_smtp_username is defined and default_smtp_username is not none and default_smtp_password is defined and default_smtp_password is not none
+
+
+- name: Create a user in OpenShift /etc/origin/master/openshift-passwords
+  hosts: openshift_master_group
+  gather_facts: False
+  tasks:
+     - name: Creating username{{ ':' }} {{ openshift_username }} with password{{ ':' }} {{ openshift_password }}
+       command: htpasswd -b /etc/origin/master/openshift-passwords {{ openshift_username }} {{ openshift_password }}
+
+
