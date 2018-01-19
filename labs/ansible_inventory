@@ -1,6 +1,7 @@
 [OSEv3:children]
 masters
 nodes
+etcd
  
 [masters]
 <YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
@@ -9,6 +10,9 @@ nodes
 <YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
 <YOUR PREFIX>-infra  openshift_node_labels="{'host': 'infra'}"
 <YOUR PREFIX>-node   openshift_node_labels="{'host': 'apps'}"
+
+[etcd]
+<YOUR PREFIX>-master
 
 [OSEv3:vars]
 deployment_type=openshift-enterprise
