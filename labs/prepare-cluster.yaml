@@ -51,6 +51,11 @@
       tags:
         - prepare_master
 
+    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-master into etcd section
+      lineinfile: dest=/etc/ansible/hosts insertafter="\[etcd\]" state="present" line="{{ prefix }}-master"
+      tags:
+        - prepare_master
+
     - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-master into nodes section
       lineinfile: dest=/etc/ansible/hosts insertafter="\[nodes\]" state="present" line="{{ prefix }}-master"
       tags:
