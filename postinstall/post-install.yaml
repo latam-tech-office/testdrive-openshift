@@ -8,7 +8,10 @@
        lineinfile: dest=/etc/origin/master/master-config.yaml  state=present regexp="defaultNodeSelector" line='  defaultNodeSelector{{ ':' }} "host=apps"'
 
      - name: Restart OpenShift's Master
-       service: name=atomic-openshift-master state=restarted
+       service: name={{ item }} state=restarted
+       with_items:
+          - atomic-openshift-master-api
+          - atomic-openshift-master-controllers
 
      - name: All pods in Project Default must run on Infra Host
        command: oc patch namespace/default --patch '{"metadata"{{ ':' }} {"name"{{ ':' }} "default","annotations"{{ ':' }} {"openshift.io/node-selector"{{ ':' }} "host=infra"}}}'
