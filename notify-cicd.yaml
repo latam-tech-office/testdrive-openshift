@@ -1,5 +1,5 @@
 ---
-- name: Notify Attendees related environment OpenShift TestDrive@Dev
+- name: Notify Attendees related environment OpenShift TestDrive@CI/CD
   hosts: localhost
   connection: connection
   gather_facts: False
@@ -24,7 +24,7 @@
        with_items: "{{ attendees }}"
        when: email in item
 
-     - fail: msg="{{ email }} wasn't found into file ops-attendees.txt"
+     - fail: msg="{{ email }} wasn't found into file dev-attendees.txt"
        when: line_selected is not defined
 
      - set_fact: user_id={{ line_selected.split(',')[0] }}
