@@ -46,27 +46,27 @@
       tags:
          - prepare_master
 
-    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-master into masters section
+    - name: (MASTER SECTION) Add hostname{{ ':' }} {{ prefix }}-master into masters section
       lineinfile: dest=/etc/ansible/hosts insertafter="\[masters\]" state="present" line="{{ prefix }}-master openshift_public_hostname=master.testdrive.com"
       tags:
         - prepare_master
 
-    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-master into etcd section
+    - name: (ETCD SECTION) Add hostname{{ ':' }} {{ prefix }}-master into etcd section
       lineinfile: dest=/etc/ansible/hosts insertafter="\[etcd\]" state="present" line="{{ prefix }}-master"
       tags:
         - prepare_master
 
-    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-master into nodes section
-      lineinfile: dest=/etc/ansible/hosts insertafter="\[nodes\]" state="present" line="{{ prefix }}-master"
+    - name: (NODES SECTION 1/3) Add hostname{{ ':' }} {{ prefix }}-master into nodes section
+      lineinfile: dest=/etc/ansible/hosts insertafter="\[nodes\]" state="present" line="{{ prefix }}-master openshift_schedulable=\"false\""
       tags:
         - prepare_master
 
-    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-infra into nodes section
+    - name: (NODES SECTION 2/3) Add hostname{{ ':' }} {{ prefix }}-infra into nodes section
       lineinfile: dest=/etc/ansible/hosts insertafter="\[nodes\]" state="present" line="{{ prefix }}-infra openshift_node_labels=\"{'host'{{ ':' }} 'infra'}\""
       tags:
         - prepare_master
 
-    - name: Add hostname into the temporary inventory{{ ':' }} {{ prefix }}-node into nodes section
+    - name: (NODES SECTION 3/3) Add hostname{{ ':' }} {{ prefix }}-node into nodes section
       lineinfile: dest=/etc/ansible/hosts insertafter="\[nodes\]" state="present" line="{{ prefix }}-node openshift_node_labels=\"{'host'{{ ':' }} 'apps'}\""
       tags:
         - prepare_master
