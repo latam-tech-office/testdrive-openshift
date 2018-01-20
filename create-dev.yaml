@@ -164,19 +164,19 @@
      - name: Generating the first version of the inventory file
        template: src=templates/ansible_hosts.j2 dest=/tmp/ansible_hosts.j2
 
-     - name: Add the hostname into the temporary inventory{{ ':' }} {{ master_definition.hostname }} into masters section
+     - name: (MASTER SECTION) Add the hostname{{ ':' }} {{ master_definition.hostname }} into masters section
        lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[masters\]" state="present" line="{{ master_definition.hostname }} openshift_public_hostname=master.testdrive.com"
 
-     - name: Add the hostname into the temporary inventory{{ ':' }} {{ master_definition.hostname }} into etcd section
+     - name: (ETCD SECTION) Add the hostname{{ ':' }} {{ master_definition.hostname }} into etcd section
        lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[etcd\]" state="present" line="{{ master_definition.hostname }}"
 
-     - name: Add the hostname into the temporary inventory{{ ':' }} {{ master_definition.hostname }} into nodes section 
-       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ master_definition.hostname }}"
+     - name: (NODES SECTION 1/3) Add the hostname{{ ':' }} {{ master_definition.hostname }} into nodes section 
+       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ master_definition.hostname }} openshift_schedulable=\"false\""
 
-     - name: Add the hostname into the temporary inventory file{{ ':' }} {{ infra_definition.hostname }} into nodes section
+     - name: (NODES SECTION 2/3) Add the hostname{{ ':' }} {{ infra_definition.hostname }} into nodes section
        lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ infra_definition.hostname }} openshift_node_labels=\"{'host'{{ ':' }} 'infra'}\""
 
-     - name: Add the hostname into the temporary inventory (all Nodes)
+     - name: (NODES SECTION 3/3) Add the hostname (all Nodes)
        lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ item.hostname }}  openshift_node_labels=\"{'host'{{ ':' }} 'apps'}\""
        with_items: "{{ nodes_definition }}" 
 
