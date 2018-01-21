@@ -23,6 +23,10 @@
         - cake
         - locust
         - business-central
+        - docker-registry-default
+        - registry-console-default
+        - apiserver-kube-service-catalog
+        - asb-1338-openshift-ansible-service-broker
   vars_files:
      - gce/authentication
      - gce/defaults
