@@ -7,6 +7,15 @@
      - name: Modify configuration in Master, so all Pods will be create in host=apps
        lineinfile: dest=/etc/origin/master/master-config.yaml  state=present regexp="defaultNodeSelector" line='  defaultNodeSelector{{ ':' }} "host=apps"'
 
+     - name: Adding Jenkins Provisioning into Master Configuration File
+       lineinfile: path=/etc/origin/master/master-config.yaml insertbefore=BOF line={{ item }}
+       with_items:
+          - "  serviceName{{ ':' }} jenkins-jnlp"
+          - "  templateName{{ ':' }} jenkins-ephemeral"
+          - "  templateNamespace{{ ':' }} openshift"
+          - "  autoProvisionEnabled{{ ':' }} true"
+          - "jenkinsPipelineConfig{{ ':' }}"
+
      - name: Restart OpenShift's Master
        service: name={{ item }} state=restarted
        with_items:
