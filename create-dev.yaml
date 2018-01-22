@@ -268,6 +268,7 @@
        - bash-completion
        - docker
        - httpd-tools
+       - screen
   tasks:
     - name: Loading SSH KEY from localhost (if any)
       set_fact: ssh_key="{{ lookup('file','{{ ssh_key_file }}') }}"
