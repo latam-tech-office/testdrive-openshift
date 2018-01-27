@@ -3,6 +3,11 @@
   hosts: localhost
   connection: local
   gather_facts: False 
+  vars:
+     projects_should_be_infranode:
+          - default
+          - openshift-infra
+          - openshift-ansible-service-broker
   tasks:
      - name: Modify configuration in Master, so all Pods will be create in host=apps
        lineinfile: dest=/etc/origin/master/master-config.yaml  state=present regexp="defaultNodeSelector" line='  defaultNodeSelector{{ ':' }} "host=apps"'
@@ -22,14 +27,16 @@
           - atomic-openshift-master-api
           - atomic-openshift-master-controllers
 
-     - name: All pods in Project Default must run on Infra Host
-       command: oc patch namespace/default --patch '{"metadata"{{ ':' }} {"name"{{ ':' }} "default","annotations"{{ ':' }} {"openshift.io/node-selector"{{ ':' }} "host=infra"}}}'
+     - name: Make sure some key projects are running on Infra Node
+       command: oc patch namespace/{{ item }} --patch '{"metadata"{{ ':' }} {"name"{{ ':' }} "{{ item }}","annotations"{{ ':' }} {"openshift.io/node-selector"{{ ':' }} "host=infra"}}}'
+       with_items: "{{ projects_should_be_infranode }}"
 
-     - name: Recreate Pods in Project Default
-       command: oc delete pods --all --namespace default
+     - name: Recreate Pods, so it will be on Infra Node
+       command: oc delete pods --all --namespace {{ item }}
+       with_items: "{{ projects_should_be_infranode }}"
 
-     - name: All pods in Project OpenShift INfra must run on Infra Host
-       command: oc patch namespace/openshift-infra --patch '{"metadata"{{ ':' }} {"name"{{ ':' }} "openshift-infra","annotations"{{ ':' }} {"openshift.io/node-selector"{{ ':' }} "host=infra"}}}'
-
-     - name: Recreate Pods in Project Openshift-Infra
-       command: oc delete pods --all --namespace openshift-infra
+     - name: "openshift-ansible-service-broker: Make sure it's running"
+       command: oc rollout latest dc/{{ item }} --namespace openshift-ansible-service-broker
+       with_items: 
+          - asb-etcd
+          - asb
