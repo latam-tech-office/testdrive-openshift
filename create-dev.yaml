@@ -39,11 +39,7 @@
        set_fact: openshift_master_private_ip={{ master_instance_creation.instance_data[0].private_ip }}
 
      - name: Update bin/install_openshift.sh to call the right server
-       copy: dest=bin/install_openshift.sh content="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {{ ssh_default_image_user }}@{{ openshift_master_public_ip }} \"sudo ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml; ansible-playbook /root/postinstall/post-install.yaml; ansible-playbook /root/postinstall/create_persistentvolumes.yaml -e nfs_server={{ openshift_master_private_ip }}\""
-
-     - name: Add a Slack Notification at end of OpenShift's installation
-       lineinfile: path=bin/install_openshift.sh insertafter=EOF line="ansible localhost -m slack -a \"token={{ default_slack_token }} msg='TestDrive@Dev{{ '{{' }} '{{ ':' }}' {{ '}}' }} Environment was successfully created'\""
-       when: default_slack_token is defined and default_slack_token is not none
+       copy: dest=bin/install_openshift.sh content="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {{ ssh_default_image_user }}@{{ openshift_master_public_ip }} \"screen -dm bash -c '/root/install_openshift.sh'\"; echo \">>>> Installing OpenShift Container Platform in Background. It's going to be ready in a while\""
 
      - name: Attaching a Docker storage{{ ':' }} {{ master_definition.hostname }}
        gce_pd:
@@ -62,6 +58,7 @@
        add_host: groups=openshift_master_group hostname={{ openshift_master_public_ip }}
                  ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
                  ansible_port={{ ssh_default_image_port }}
+                 openshift_master_private_ip={{ openshift_master_private_ip }}
 
 ### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
 #### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
@@ -186,7 +183,29 @@
   hosts: openshift_master_group
   vars_files:
      - gce/defaults  
+     - notification/slack_authentication
   tasks:
+    - name: "Creating script for installing OpenShift after provisioning: /root/install_openshift.sh"
+      lineinfile: path=/root/install_openshift.sh state=present create=True insertafter=EOF line={{ item }}
+      with_items:
+          - "ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml"
+          - "ansible-playbook /root/postinstall/post-install.yaml"
+          - "ansible-playbook /root/postinstall/create_persistentvolumes.yaml -e nfs_server={{ openshift_master_private_ip }}"
+      tags:
+        - prepare_master
+
+    - name: "Adding Slack Notification at the end: /root/install_openshift.sh"
+      lineinfile: path=/root/install_openshift.sh state=present create=True insertafter=EOF
+                  line="ansible localhost -m slack -a \"token={{ default_slack_token }} msg='TestDrive@DEV{{ ':' }} OpenShift Container Platform is Ready to go'\""
+      when: default_slack_token is defined and default_slack_token is not none
+      tags:
+        - prepare_master
+
+    - name: "Making script runnable: /root/install_openshift.sh"
+      file: path=/root/install_openshift.sh mode=a+x
+      tags:
+        - prepare_master
+
     - name: Generate keys for Master
       command: "ssh-keygen -b 4096 -t rsa -f /root/.ssh/id_rsa -q -N \"\""
       tags:
