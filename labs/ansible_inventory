@@ -17,7 +17,8 @@ etcd
 [OSEv3:vars]
 deployment_type=openshift-enterprise
 
-openshift_enable_service_catalog=false
+# Make sure all Template Service Broker lies at the InfraNode
+template_service_broker_selector={"host":"infra"}
 
 # Disable some checks before installing
 openshift_disable_check=disk_availability,docker_storage,memory_availability
