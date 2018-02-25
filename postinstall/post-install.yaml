@@ -35,8 +35,19 @@
        command: oc delete pods --all --namespace {{ item }}
        with_items: "{{ projects_should_be_infranode }}"
 
+     - name: "Canceling any openshift-ansible-service-broker deployment"
+       command: oc rollout cancel dc/{{ item }} --namespace openshift-ansible-service-broker
+       with_items:
+          - asb-etcd
+          - asb
+       ignore_errors: True
+       tags:
+          - asb
+
      - name: "openshift-ansible-service-broker: Make sure it's running"
        command: oc rollout latest dc/{{ item }} --namespace openshift-ansible-service-broker
        with_items: 
           - asb-etcd
+          - asb
+       tags: 
           - asb
