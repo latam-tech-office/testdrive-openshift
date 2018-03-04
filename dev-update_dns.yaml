@@ -1,0 +1,70 @@
+---
+- name: Fetch Dev environment and update Cloud DNS Service 
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+     dns_zone: "solutionarchitectsredhat.com.br"
+     master_url: "openshift.maltron.{{ dns_zone }}"
+     cloudapps_url: "*.cloudapps.maltron.{{ dns_zone }}"
+  vars_files:
+     - dev-openshift-definition.info
+     - gce/defaults
+     - gce/authentication
+     - gce/authentication_dns
+  tasks:
+     - include: commons/setting_defaults.yaml
+
+#### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
+##### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
+     - name: Fetch information regarding OpenShift's Master{{ ':' }} {{ master_definition.hostname }}
+       gce:
+         instance_names: "{{ master_definition.hostname }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       register: master_instance_status
+
+     - name: Getting OpenShift's Master Public IP{{ ':' }} {{ master_instance_status.instance_data[0].public_ip }}
+       set_fact: openshift_master_public_ip={{ master_instance_status.instance_data[0].public_ip }}
+
+#### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
+##### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA
+     - name: Fetch information regarding OpenShift's Infra{{ ':' }} {{ infra_definition.hostname }}
+       gce:
+         instance_names: "{{ infra_definition.hostname }}"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       register: infra_instance_status
+
+     - name: Getting OpenShift's InfraNode Public IP{{ ':' }} {{ infra_instance_status.instance_data[0].public_ip }}
+       set_fact: openshift_infra_public_ip={{ infra_instance_status.instance_data[0].public_ip }}
+
+#### CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS 
+##### CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS 
+     - name: Updating Cloud DNS with the Master's IP {{ openshift_master_public_ip }}
+       gcdns_record: 
+           zone: "{{ dns_zone }}"
+           record: "{{ master_url }}"
+           value: "{{ openshift_master_public_ip }}"
+           state: present
+           type: A
+           overwrite: true
+           credentials_file: "{{ dns_gce_credentials_file }}"
+           project_id: "{{ dns_gce_project_id }}"
+           service_account_email: "{{ dns_gce_service_account_email }}"
+
+     - name: Updating Cloud DNS with Infra's IP {{ openshift_infra_public_ip }}
+       gcdns_record:
+           zone: "{{ dns_zone }}"
+           record: "{{ cloudapps_url }}"
+           value: "{{ openshift_infra_public_ip }}"
+           type: A
+           overwrite: true
+           credentials_file: "{{ dns_gce_credentials_file }}"
+           project_id: "{{ dns_gce_project_id }}"
+           service_account_email: "{{ dns_gce_service_account_email }}"           
+
