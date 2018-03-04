@@ -5,8 +5,9 @@
   gather_facts: False
   vars:
      dns_zone: "solutionarchitectsredhat.com.br"
-     master_url: "openshift.maltron.{{ dns_zone }}"
-     cloudapps_url: "*.cloudapps.maltron.{{ dns_zone }}"
+     master_url_record: "openshift.maltron.{{ dns_zone }}"
+     cloudapps_url: "cloudapps.maltron.{{ dns_zone }}"
+     cloudapps_url_record: "*.{{ cloudapps_url }}"
   vars_files:
      - dev-openshift-definition.info
      - gce/defaults
@@ -29,6 +30,12 @@
      - name: Getting OpenShift's Master Public IP{{ ':' }} {{ master_instance_status.instance_data[0].public_ip }}
        set_fact: openshift_master_public_ip={{ master_instance_status.instance_data[0].public_ip }}
 
+     - name: Creating OpenShift's Master Host Group
+       add_host: hostname={{ openshift_master_public_ip }} groups=openshift_master
+                 master_url={{ master_url_record }}  cloudapps_url={{ cloudapps_url }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}
+
 #### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
 ##### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA
      - name: Fetch information regarding OpenShift's Infra{{ ':' }} {{ infra_definition.hostname }}
@@ -45,10 +52,10 @@
 
 #### CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS 
 ##### CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS CLOUD DNS 
-     - name: Updating Cloud DNS with the Master's IP {{ openshift_master_public_ip }}
+     - name: Updating Cloud DNS with the Master's IP {{ openshift_master_public_ip }} {{ master_url_record }}
        gcdns_record: 
            zone: "{{ dns_zone }}"
-           record: "{{ master_url }}"
+           record: "{{ master_url_record }}"
            value: "{{ openshift_master_public_ip }}"
            state: present
            type: A
@@ -57,10 +64,10 @@
            project_id: "{{ dns_gce_project_id }}"
            service_account_email: "{{ dns_gce_service_account_email }}"
 
-     - name: Updating Cloud DNS with Infra's IP {{ openshift_infra_public_ip }}
+     - name: Updating Cloud DNS with Infra's IP {{ openshift_infra_public_ip }} {{ cloudapps_url_record }}
        gcdns_record:
            zone: "{{ dns_zone }}"
-           record: "{{ cloudapps_url }}"
+           record: "{{ cloudapps_url_record }}"
            value: "{{ openshift_infra_public_ip }}"
            type: A
            overwrite: true
@@ -68,3 +75,15 @@
            project_id: "{{ dns_gce_project_id }}"
            service_account_email: "{{ dns_gce_service_account_email }}"           
 
+- name: Changing Ansible's Inventory with DNS entries
+  hosts: openshift_master
+  gather_facts: False
+  tasks:
+     - name: "Updating Ansible's Inventory with OpenShift's Master Public URL: {{ master_url }}"
+       replace: path=/etc/ansible/hosts regexp=master.testdrive.com  
+                replace="{{ master_url }}"
+
+     - name: "Updating Ansible's Inventory OpenShift's Infra Public URL: {{ cloudapps_url }}"
+       replace: path=/etc/ansible/hosts regexp=cloudapps.testdrive.com
+                replace="{{ cloudapps_url }}"
+  
