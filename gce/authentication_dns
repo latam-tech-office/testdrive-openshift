@@ -1,3 +1,4 @@
+## This file is to update any DNS entry at Cloud DNS, which relies in a different project
 gce_credentials_file: 
 gce_project_id: 
 gce_service_account_email: 
