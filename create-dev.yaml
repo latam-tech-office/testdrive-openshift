@@ -11,6 +11,15 @@
   tasks:
      - include: commons/setting_defaults.yaml
 
+     - name: Starting openshift-repository
+       gce:
+         instance_names: "openshift-repository"
+         state: "started"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+
 ### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
 #### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
      - name: Creating instance {{ ':' }} {{ master_definition.hostname }}
