@@ -11,7 +11,7 @@
   tasks:
      - include: commons/setting_defaults.yaml
 
-     - name: Stopping openshift-repository
+     - name: "REPOSITORY: Stopping"
        gce:
          instance_names: "openshift-repository"
          state: "stopped"
@@ -20,7 +20,7 @@
          credentials_file: "{{ gce_credentials_file }}"
          service_account_email: "{{ gce_service_account_email }}"
 
-     - name: Deleting instance exists{{ ':' }} {{ master_definition.hostname }}
+     - name: "MASTER: Deleting instance exists:{{ master_definition.hostname }}"
        gce:
          instance_names: "{{  master_definition.hostname }}"
          zone: "{{ zone }}"
@@ -30,7 +30,7 @@
          service_account_email: "{{ gce_service_account_email }}"
        ignore_errors: True
 
-     - name: Deleting Docker Storage for{{ ':' }}{{  master_definition.hostname }}
+     - name: "MASTER: Deleting Docker Storage:{{  master_definition.hostname }}"
        gce_pd:
          name: "{{  master_definition.hostname }}-docker"
          zone: "{{ zone }}"
@@ -40,7 +40,7 @@
          service_account_email: "{{ gce_service_account_email }}"
        ignore_errors: True
 
-     - name: Deleting instance exists{{ ':' }} {{ infra_definition.hostname }}
+     - name: "INFRA: Deleting instance exists:{{ infra_definition.hostname }}"
        gce:
          instance_names: "{{ infra_definition.hostname }}"
          zone: "{{ zone }}"
@@ -50,7 +50,7 @@
          service_account_email: "{{ gce_service_account_email }}"
        ignore_errors: True
 
-     - name: Deleting Docker Storage for{{ ':' }}{{ infra_definition.hostname }}
+     - name: "INFRA: Deleting Docker Storage for:{{ infra_definition.hostname }}"
        gce_pd:
          name: "{{ infra_definition.hostname }}-docker"
          zone: "{{ zone }}"
@@ -60,7 +60,7 @@
          service_account_email: "{{ gce_service_account_email }}"
        ignore_errors: True
 
-     - name: Deleting ALL Nodes instances
+     - name: "NODE: Deleting ALL Nodes instances"
        gce:
          instance_names: "{{ item.hostname }}"
          zone: "{{ zone }}"
@@ -71,7 +71,7 @@
        ignore_errors: True
        with_items: "{{ nodes_definition }}"
 
-     - name: Deleting ALL Nodes's docker storage
+     - name: "NODE: Deleting ALL Nodes's docker storage"
        gce_pd:
          name: "{{ item.hostname }}-docker"
          zone: "{{ zone }}"
@@ -82,9 +82,6 @@
        ignore_errors: True
        with_items: "{{ nodes_definition }}"
 
-     - name: Notifying by Slack about sucessfully deletion
+     - name: "SLACK: Notifying of sucessfully deletion"
        slack: token={{ default_slack_token }} msg="TestDrive@Dev{{ ':'}} Environment was successfully deleted"
        when: default_slack_token is defined and default_slack_token is not none
-
-
-
