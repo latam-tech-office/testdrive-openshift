@@ -73,6 +73,8 @@
          - rhel-7-fast-datapath-rpms
          - rhel-7-server-rhmap-4.5-rpms
          - rhel-7-server-3scale-amp-2.0-rpms
+         - rhel-server-rhscl-7-rpms
+         - rhel-7-server-optional-rpms
      disk_storage: "/dev/sdb"
      disk_storage_partition: "{{ disk_storage }}1"
      disk_storage_directory: "/var/storage/repos"
@@ -91,7 +93,11 @@
          - psacct
          - screen
          - ansible
-         - openshift-utils
+         - python27 
+         - python27-python-devel 
+         - python27-python-setuptools 
+         - python27-python-pip 
+         - nss_wrapper
   tasks:
     - name: Loading SSH KEY from localhost (if any)
       set_fact: ssh_key="{{ lookup('file','{{ ssh_key_file }}') }}"
