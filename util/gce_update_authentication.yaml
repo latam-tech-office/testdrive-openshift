@@ -30,11 +30,11 @@
     - name: Reading the contents of {{ source }}
       set_fact: service_account_file="{{ lookup('file','{{ source }}') }}"
 
-    - name: "GCE property gce_credentials_file={{ source }}"
-      lineinfile: dest={{ destination }} line="gce_credentials_file={{ source }}" 
+    - name: "GCE property gce_credentials_file: {{ source }}"
+      lineinfile: dest={{ destination }} regexp="^gce_credentials_file" line="gce_credentials_file{{ ':' }} {{ source }}" 
 
-    - name: "GCE property gce_project_id={{ service_account_file.project_id }}"
-      lineinfile: dest={{ destination }} line="gce_project_id={{ service_account_file.project_id }}"
+    - name: "GCE property gce_project_id: {{ service_account_file.project_id }}"
+      lineinfile: dest={{ destination }} regexp="^gce_project_id" line="gce_project_id{{ ':' }} {{ service_account_file.project_id }}"
 
-    - name: "GCE property gce_service_account_email={{ service_account_file.client_email }}"
-      lineinfile: dest={{ destination }} line="gce_service_account_email={{ service_account_file.client_email }}"
+    - name: "GCE property gce_service_account_email: {{ service_account_file.client_email }}"
+      lineinfile: dest={{ destination }} regexp="^gce_service_account_email" line="gce_service_account_email{{ ':' }} {{ service_account_file.client_email }}"
