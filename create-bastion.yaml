@@ -55,6 +55,7 @@
       add_host: groups=bastion_group hostname={{ bastion_public_ip }}
                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
                 ansible_port={{ ssh_default_image_port }}
+                bastion_public_ip={{ bastion_public_ip }}
       tags:
          - create
 
@@ -184,3 +185,6 @@
       command: pip install apache-libcloud
       tags:
          - gce
+
+    - name: "Informing Bastion IP: {{ bastion_public_ip }}"
+      debug: msg="Bastion is Ready{{ ':' }} ssh root@{{ bastion_public_ip }}"
