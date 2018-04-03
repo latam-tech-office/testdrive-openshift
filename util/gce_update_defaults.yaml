@@ -1,0 +1,29 @@
+---
+- name: "GCE: Updated gce/defaults with some values"
+  hosts: localhost
+  connection: local
+  vars:
+      - ssh_idrsa_pub_filename: ""
+  tasks:
+    - name: "Does the file {{ destination }} exists ?"
+      stat: path={{ destination }}
+      register: destination_file
+
+    - fail: msg="{{ destination }} doesn't exist"
+      when: not destination_file.stat.exists
+
+    - name: "Check if there is a SSH Public key file existing"
+      stat: path={{ ansible_user_dir }}/.ssh/id_rsa.pub
+
+    - name: Defining the SSH Public Key
+      set_fact: ssh_idrsa_pub_filename="{{ ansible_user_dir }}/.ssh/id_rsa.pub"
+
+    - name: "Default property ssh_default_image_user: root"
+      lineinfile: dest={{ destination }} regexp="^{{ item.key }}" line="{{ item.key }}{{ ':' }} {{ item.value }}"
+      with_items: 
+          - { key: "ssh_default_image_user", value: "root" }
+          - { key: "ssh_default_image_password", value: "r3dh4t1!" }
+          - { key: "ssh_default_image_port", value: "22" }
+          - { key: "openshift_repository_ip", value: "192.168.0.2" }
+          - { key: "ssh_key_file", value: "{{ ssh_idrsa_pub_filename }}" }
+
