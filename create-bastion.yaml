@@ -2,13 +2,13 @@
 - name: Creating a instance name Bastion
   hosts: localhost
   connection: local
-  gather_facts: False
   vars_files:
      - gce/authentication
      - gce/defaults
   vars:
      - bastion_name: "bastion"
      - bastion_machine_type: n1-standard-2
+     - gce_serviceaccount_directory: "{{ ansible_user_dir }}/.gce"
   tasks:
     - include: commons/setting_defaults.yaml
       tags:
@@ -24,7 +24,7 @@
       tags:
          - always
 
-    - name: "Creating a instance named: Bastion"
+    - name: "Creating a instance named: {{ bastion_name }}"
       gce:
         instance_names: "{{ bastion_name }}"
         state: "present"
@@ -56,6 +56,7 @@
                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
                 ansible_port={{ ssh_default_image_port }}
                 bastion_public_ip={{ bastion_public_ip }}
+                gce_serviceaccount_directory={{ gce_serviceaccount_directory }}
       tags:
          - create
 
@@ -94,6 +95,31 @@
          - screen
          - python-pip
   tasks:
+    - name: "GCE: Check if there is content into directory {{ gce_serviceaccount_directory }}"
+      local_action: stat path={{ gce_serviceaccount_directory }}
+      register: gce_content
+      tags:
+         - gce
+
+    - name: "GCE: Create a directory where all service account's will reside"
+      file: path=/root/.gce state=directory recurse=yes
+      when: gce_content.stat.exists
+      become: True
+      tags:
+         - gce
+
+    - name: "GCE: Copy the contents of {{ gce_serviceaccount_directory }} into Bastion's /root"
+      copy: src={{ gce_serviceaccount_directory }} dest=/root directory_mode=True
+      when: gce_content.stat.exists
+      tags:
+         - gce
+
+    - name: Git cloning LATAM Tech Office Playbooks
+      git: repo=https://github.com/latam-tech-office/{{ item }} dest=/root/{{ item }}
+      with_items:
+         - testdrive-openshift
+         - install-openshift
+
     - name: Loading SSH KEY from localhost (if any)
       set_fact: ssh_key="{{ lookup('file','{{ ssh_key_file }}') }}"
       when: ssh_key_file is defined
