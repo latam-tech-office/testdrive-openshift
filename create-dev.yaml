@@ -177,7 +177,7 @@
        lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[etcd\]" state="present" line="{{ master_definition.hostname }}"
 
      - name: (NODES SECTION 1/3) Add the hostname{{ ':' }} {{ master_definition.hostname }} into nodes section 
-       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ master_definition.hostname }} openshift_schedulable=\"false\""
+       lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ master_definition.hostname }}"
 
      - name: (NODES SECTION 2/3) Add the hostname{{ ':' }} {{ infra_definition.hostname }} into nodes section
        lineinfile: dest=/tmp/ansible_hosts.j2 insertafter="\[nodes\]" state="present" line="{{ infra_definition.hostname }} openshift_node_labels=\"{'host'{{ ':' }} 'infra'}\""
