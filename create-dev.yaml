@@ -197,7 +197,8 @@
     - name: "Creating script for installing OpenShift after provisioning: /root/install_openshift.sh"
       lineinfile: path=/root/install_openshift.sh state=present create=True insertafter=EOF line={{ item }}
       with_items:
-          - "ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml"
+          - "ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml"
+          - "ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml"
           - "ansible-playbook /root/postinstall/post-install.yaml"
           - "ansible-playbook /root/postinstall/create_persistentvolumes.yaml -e nfs_server={{ openshift_master_private_ip }}"
       tags:
@@ -294,9 +295,11 @@
        - iptables-services
        - bridge-utils
        - bash-completion
-       - docker
        - httpd-tools
        - screen
+       - kexec-tools
+       - sos
+       - psacct
   tasks:
     - name: Loading SSH KEY from localhost (if any)
       set_fact: ssh_key="{{ lookup('file','{{ ssh_key_file }}') }}"
