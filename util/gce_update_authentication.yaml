@@ -1,0 +1,40 @@
+---
+- name: "GCE: Fetch data from Service Account and update into gce/authentication"
+  hosts: localhost
+  connection: local
+  tasks:
+    - fail: msg="source parameter is not defined"
+      when: source is not defined
+      tags:
+         - always
+
+    - fail: msg="destination parameter is not defined"
+      when: destination is not defined
+      tags:
+         - always
+
+    - name: "Does the file {{ source }} exists ?"
+      stat: path={{ source }}
+      register: source_file
+
+    - fail: msg="{{ source }} doesn't not exist"
+      when: not source_file.stat.exists
+
+    - name: "Does the file {{ destination }} exists ?"
+      stat: path={{ destination }}
+      register: destination_file
+
+    - fail: msg="{{ destination }} doesn't exist" 
+      when: not destination_file.stat.exists
+
+    - name: Reading the contents of {{ source }}
+      set_fact: service_account_file="{{ lookup('file','{{ source }}') }}"
+
+    - name: "GCE property gce_credentials_file={{ source }}"
+      lineinfile: dest={{ destination }} line="gce_credentials_file={{ source }}" 
+
+    - name: "GCE property gce_project_id={{ service_account_file.project_id }}"
+      lineinfile: dest={{ destination }} line="gce_project_id={{ service_account_file.project_id }}"
+
+    - name: "GCE property gce_service_account_email={{ service_account_file.client_email }}"
+      lineinfile: dest={{ destination }} line="gce_service_account_email={{ service_account_file.client_email }}"
