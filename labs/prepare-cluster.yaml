@@ -112,6 +112,10 @@
        - bash-completion
        - docker
        - httpd-tools
+       - screen
+       - kexec-tools
+       - sos
+       - psacct
   tasks:
     - name: Fetch Master's Public Key
       set_fact: openshift_master_ssh_key={{ hostvars['maltron-master']['master_ssh_key'] }}
