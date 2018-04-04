@@ -2,8 +2,6 @@
 - name: "GCE: Updated gce/defaults with some values"
   hosts: localhost
   connection: local
-  vars:
-      - ssh_idrsa_pub_filename: ""
   tasks:
     - name: "Does the file {{ destination }} exists ?"
       stat: path={{ destination }}
@@ -14,16 +12,18 @@
 
     - name: "Check if there is a SSH Public key file existing"
       stat: path={{ ansible_user_dir }}/.ssh/id_rsa.pub
+      register: public_key_file
 
-    - name: Defining the SSH Public Key
-      set_fact: ssh_idrsa_pub_filename="{{ ansible_user_dir }}/.ssh/id_rsa.pub"
+    - name: Generate private and public keys (in case it doesn't exist)
+      command: "ssh-keygen -b 4096 -t rsa -f {{ ansible_user_dir }}/.ssh/id_rsa -q -N \"\""
+      when: not public_key_file.stat.exists
 
     - name: "Default property ssh_default_image_user: root"
-      lineinfile: dest={{ destination }} regexp="^{{ item.key }}" line="{{ item.key }}{{ ':' }} {{ item.value }}"
+      replace: dest={{ destination }} regexp="^{{ item.key }}\:" replace="{{ item.key }}{{ ':' }} {{ item.value }}"
       with_items: 
           - { key: "ssh_default_image_user", value: "root" }
           - { key: "ssh_default_image_password", value: "r3dh4t1!" }
           - { key: "ssh_default_image_port", value: "22" }
           - { key: "openshift_repository_ip", value: "192.168.0.2" }
-          - { key: "ssh_key_file", value: "{{ ssh_idrsa_pub_filename }}" }
+          - { key: "ssh_key_file", value: "{{ ansible_user_dir }}/.ssh/id_rsa.pub" }
 

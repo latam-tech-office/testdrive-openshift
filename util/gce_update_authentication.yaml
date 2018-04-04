@@ -31,8 +31,15 @@
       set_fact: service_account_file="{{ lookup('file','{{ source }}') }}"
 
     - name: "GCE: Setting Properties" 
-      lineinfile: dest={{ destination }} regexp="^{{ item.key }}" line="{{ item.key }}{{ ':' }} {{ item.value }}" 
+      replace: dest={{ destination }} regexp="^{{ item.key }}\:" replace="{{ item.key }}{{ ':' }} {{ item.value }}" 
       with_items: 
          - { key: "gce_credentials_file", value: "{{ source }}" }
          - { key: "gce_project_id", value: "{{ service_account_file.project_id }}" }
          - { key: "gce_service_account_email", value: "{{ service_account_file.client_email }}" }
+
+    - name: "GCE: Setting Properties (DNS scenario)"
+      replace: dest={{ destination }} regexp="^{{ item.key }}\:" replace="{{ item.key }}{{ ':' }} {{ item.value }}"
+      with_items:
+         - { key: "dns_gce_credentials_file", value: "{{ source }}" }
+         - { key: "dns_gce_project_id", value: "{{ service_account_file.project_id }}" }
+         - { key: "dns_gce_service_account_email", value: "{{ service_account_file.client_email }}" }
