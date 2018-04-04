@@ -37,4 +37,4 @@
       become: True
       ignore_errors: True    
 
-    - debug: msg="ssh root@{{ bastion_public_ip }}"
+    - debug: msg="ssh root@{{ bastion_public_ip }} or ssh root@{{ bastion_name }}"
