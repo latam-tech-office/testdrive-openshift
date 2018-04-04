@@ -30,4 +30,11 @@
         service_account_email: "{{ gce_service_account_email }}"
       register: instance_status
 
-    - debug: msg="ssh root@{{ instance_status.instance_data[0].public_ip }}"
+    - set_fact: bastion_public_ip={{ instance_status.instance_data[0].public_ip }}
+
+    - name: "Writing into /etc/hosts: {{ bastion_public_ip }} {{ bastion_name }}"
+      lineinfile: dest=/etc/hosts state=present regexp="{{ bastion_name }}" line="{{ bastion_public_ip }} {{ bastion_name }}"
+      become: True
+      ignore_errors: True    
+
+    - debug: msg="ssh root@{{ bastion_public_ip }}"
