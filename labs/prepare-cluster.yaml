@@ -41,7 +41,7 @@
          - prepare_master
 
     - name: Download ansible_hosts file
-      uri: url=https://raw.githubusercontent.com/latam-tech-office/testdrive-openshift/master/templates/ansible_hosts.j2
+      uri: url=https://raw.githubusercontent.com/latam-tech-office/testdrive-openshift/master/labs/ansible_inventory
             method=GET status_code=200 creates=True dest=/etc/ansible/hosts
       tags:
          - prepare_master
