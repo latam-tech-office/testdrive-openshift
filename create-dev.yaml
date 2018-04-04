@@ -202,8 +202,8 @@
       with_items:
           - "ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml"
           - "ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml"
-          - "ansible-playbook /root/postinstall/post-install.yaml"
           - "ansible-playbook /root/postinstall/create_persistentvolumes.yaml -e nfs_server={{ openshift_master_private_ip }}"
+          - "ansible-playbook /root/postinstall/post-install.yaml"
       tags:
         - prepare_master
 
