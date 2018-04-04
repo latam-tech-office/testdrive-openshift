@@ -1,0 +1,33 @@
+---
+- name: Starting Bastion
+  hosts: localhost
+  connection: local
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+  vars:
+     - bastion_name: "bastion"
+  tasks:
+    - include: commons/setting_defaults.yaml
+      tags:
+         - always
+
+    - name: "Starting instance named: {{ bastion_name }}"
+      gce:
+        instance_names: "{{ bastion_name }}"
+        state: "started"
+        zone: "{{ zone }}"
+        project_id: "{{ gce_project_id }}"
+        credentials_file: "{{ gce_credentials_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+
+    - name: "Fetching Info: {{ bastion_name }}"
+      gce:
+        instance_names: "{{ bastion_name }}"
+        zone: "{{ zone }}"
+        project_id: "{{ gce_project_id }}"
+        credentials_file: "{{ gce_credentials_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+      register: instance_status
+
+    - debug: msg="ssh root@{{ instance_status.instance_data[0].public_ip }}"
