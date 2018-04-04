@@ -58,6 +58,7 @@
          mode: READ_WRITE
          disk_type: pd-standard
          size_gb: "{{ master_definition.disk_docker }}"
+         delete_on_termination: True
          zone: "{{ zone }}"
          project_id: "{{ gce_project_id }}"
          credentials_file: "{{ gce_credentials_file }}"
@@ -101,6 +102,7 @@
          mode: READ_WRITE
          disk_type: pd-standard
          size_gb: "{{ infra_definition.disk_docker }}"
+         delete_on_termination: True
          zone: "{{ zone }}"
          project_id: "{{ gce_project_id }}"
          credentials_file: "{{ gce_credentials_file }}"
@@ -141,6 +143,7 @@
          mode: READ_WRITE
          disk_type: pd-standard
          size_gb: "{{ item.disk_docker }}"
+         delete_on_termination: True
          zone: "{{ zone }}"
          project_id: "{{ gce_project_id }}"
          credentials_file: "{{ gce_credentials_file }}"
