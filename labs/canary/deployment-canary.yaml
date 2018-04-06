@@ -1,0 +1,100 @@
+---
+- name: "Deployment Canary: Preparing environment for Application"
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - deployment-ab.definition
+  tasks:
+     - name: "Create Developer Tooling: {{ jenkins_namespace }}"
+       command: oc new-project {{ jenkins_namespace }} --display-name="Developer Tooling"
+       ignore_errors: True
+
+     - name: "Select Project: {{ jenkins_namespace }}"
+       command: oc project {{ jenkins_namespace }}
+
+     - name: Provisioning all Developer Tooling for Canary Deployment
+       command: oc new-app {{ item }}
+       with_items: 
+          - "jenkins-ephemeral"
+          - "https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml"
+       ignore_errors: True
+
+     - name: "Creating a Project for Deployment Canary"
+       command: oc new-project {{ application_namespace }} --display-name="Deployment Canary technique"
+       ignore_errors: True
+
+     - name: "Select Project: {{ application_namespace }}"
+       command: oc project {{ application_namespace }}
+
+     - name: Make sure Jenkins is able to handle {{ application_namespace }}
+       command: oc policy add-role-to-user edit system:serviceaccount:{{ jenkins_namespace }}:jenkins -n {{ application_namespace }}
+
+     - name: Deleting any existing resources
+       command: "{{ item }}"
+       with_items:
+          - "oc delete all -l app=wildfly-mysql"
+          - "oc delete secrets -l app=wildfly-mysql"
+
+     - name: Creating application {{ application_one }}
+       command: oc new-app -f https://raw.githubusercontent.com/latam-tech-office/testdrive-cicd/master/ocp/template/wildfly-mysql.yaml -p APPLICATION_NAME={{ application_one }}
+
+     - name: Setting {{ application_one }} initial replicas size: {{ application_one_replicas }}
+       command: oc scale dc/{{ application_one }}-app --replicas={{ application_one_replicas }}
+
+     - name: Deleting an ImageStream/wildfly-mysql to avoid collision
+       command: oc delete is/wildfly-mysql
+
+     - name: Creating application {{ application_two }}
+       command: oc new-app -f https://raw.githubusercontent.com/latam-tech-office/testdrive-cicd/master/ocp/template/wildfly-mysql.yaml -p APPLICATION_NAME={{ application_two }}
+
+     - name: Setting {{ application_two }} initial replicas size: {{ application_two_replicas }}
+       command: oc scale dc/{{ application_two }}-app --replicas={{ application_two_replicas }}
+
+     - name: Creating environment variables for each application
+       command: oc env dc/{{ item.deploymentConfig }} DEPLOYMENT_NAME="{{ item.value }}"
+       with_items:
+          - { deploymentConfig: "{{ application_one }}-app", value: "ONE" }
+          - { deploymentConfig: "{{ application_two }}-app", value: "TWO" }
+
+     - name: Making sure DeploymentConfig is using Rolling Strategy
+       command: oc patch dc/{{ item }} --patch='{"spec":{"strategy":{"type":"Rolling"}}}'
+       with_items:
+          - "{{ application_one }}-app"
+          - "{{ application_two }}-app"    
+
+     - name: "Setting readiness probe to http://:8080/ws/ping"
+       command: oc set probe dc/{{ item }} --readiness --initial-delay-seconds=20 --period-seconds=15 --get-url=http://:8080/ws/ping
+       with_items:
+          - "{{ application_one }}-app"
+          - "{{ application_two }}-app"   
+
+     - name: Deleting existing service and routes from both applications
+       command: oc delete {{ item.resource }} {{ item.name }}
+       with_items:
+          - { resource: "service", name: "{{ application_one }}-app" }
+          - { resource: "route", name: "{{ application_one }}-app" }
+          - { resource: "service", name: "{{ application_two }}-app" }
+          - { resource: "route", name: "{{ application_two }}-app" }
+
+     - name: Patch DeploymentConfig to point to the same service
+       command: oc patch dc/{{ item }} '{"spec":{"template":{"metadata":{"labels":{"service":"canary"}}}}}'
+       with_items:
+          - "{{ application_one }}-app"
+          - "{{ application_two }}-app"
+
+     - name: Creating a single service with a selector
+       command: oc expose dc/{{ application_one }}-app --name=canary --selector='service=canary'
+
+     - name: "Patch the Service created with a different SessionAffinity: ClientIP"
+       command: oc patch service/canary --patch '{"spec":{"sessionAffinity":"ClientIP"}}'
+
+     - name: Finally, let's create a single route which it's going to round robin both pods
+       command: oc expose service/canary --hostname={{ application_namespace }}.{{ cloudapps }}
+
+     - name: Creating all the necessary BuildConfig (which will be available at Jenkins)
+       command: oc create -n {{ jenkins_namespace }} -f {{ item }}
+       with_items: 
+          - deploy-one.yaml
+          - deploy-two.yaml
+       ignore_errors: True
