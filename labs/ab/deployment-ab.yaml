@@ -20,6 +20,9 @@
           - "https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml"
        ignore_errors: True
 
+     - name: Deleting any existing BuildConfig previously created
+       command: oc delete bc -l deployment_technique=ab -n {{ jenkins_namespace }}
+
      - name: "Creating a Project for Deployment AB"
        command: oc new-project {{ application_namespace }} --display-name="Deployment AB technique"
        ignore_errors: True
@@ -81,3 +84,17 @@
           - switch-to-blue.yaml
           - switch-to-green.yaml
        ignore_errors: True
+
+     - name: "Create a label marking BuildConfig: deployment_technique=ab"
+       command: oc label bc/{{ item }} deployment_technique=ab -n {{ jenkins_namespace }}
+       with_items:
+          - deploy-blue
+          - deploy-green
+          - switch-to-blue
+          - switch-to-green
+
+     - name: Start Building in order to make ready to Deploy
+       command: oc start-build {{ item }} -n {{ jenkins_namespace }}
+       with_items:
+          - deploy-blue
+          - deploy-green
