@@ -78,7 +78,7 @@
           - { resource: "route", name: "{{ application_two }}-app" }
 
      - name: Patch DeploymentConfig to point to the same service
-       command: oc patch dc/{{ item }} '{"spec":{"template":{"metadata":{"labels":{"service":"canary"}}}}}'
+       command: oc patch dc/{{ item }} --patch='{"spec":{"template":{"metadata":{"labels":{"service":"canary"}}}}}'
        with_items:
           - "{{ application_one }}-app"
           - "{{ application_two }}-app"
