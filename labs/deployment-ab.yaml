@@ -32,6 +32,18 @@
      - name: Creating application {{ green }}
        command: oc new-app -f https://raw.githubusercontent.com/latam-tech-office/testdrive-cicd/master/ocp/template/wildfly-mysql.yaml -p APPLICATION_NAME={{ green }}
 
+     - name: Making sure DeploymentConfig is using Rolling Strategy
+       command: oc patch dc/{{ item }} --patch='{"spec":{"strategy":{"type":"Rolling"}}}'
+       with_items:
+          - "{{ blue }}-app"
+          - "{{ green }}-app"    
+
+     - name: Making sure the Pod is ready when application is ready
+       command: oc set probe dc/{{ item }} --readiness --initial-delay-seconds=20 --period-seconds=15 --get-url=http://:8080/ws/ping
+       with_items:
+          - "{{ blue }}-app"
+          - "{{ green }}-app"   
+
      - name: Deleting existing routes
        command: oc delete route {{ item }}
        with_items:
