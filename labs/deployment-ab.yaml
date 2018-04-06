@@ -39,7 +39,7 @@
           - "{{ green }}-app"
 
      - name: Creating a single route
-       command: oc expose service/{{ blue }}-app --name=tasks --hostname=application.{{ domain }}
+       command: oc expose service/{{ blue }}-app --name=tasks --hostname=application-ab.{{ domain }}
        
      - name: Creating environment variables for each application
        command: oc env dc/{{ item.deploymentConfig }} DEPLOYMENT_NAME="{{ item.value }}"
