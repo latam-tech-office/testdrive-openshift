@@ -20,15 +20,15 @@
           - "https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml"
        ignore_errors: True
 
-     - name: Make sure Jenkins is able to handle {{ application_namespace }}
-       command: oc policy add-role-to-user edit system:serviceaccount:{{ jenkins_namespace }}:jenkins -n {{ application_namespace }}
-
      - name: "Creating a Project for Deployment AB"
        command: oc new-project {{ application_namespace }} --display-name="Deployment AB technique"
        ignore_errors: True
 
      - name: "Select Project: {{ application_namespace }}"
        command: oc project {{ application_namespace }}
+
+     - name: Make sure Jenkins is able to handle {{ application_namespace }}
+       command: oc policy add-role-to-user edit system:serviceaccount:{{ jenkins_namespace }}:jenkins -n {{ application_namespace }}
 
      - name: Deleting any existing resources
        command: "{{ item }}"
