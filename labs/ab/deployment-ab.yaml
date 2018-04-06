@@ -80,3 +80,4 @@
           - deploy-green.yaml
           - switch-to-blue.yaml
           - switch-to-green.yaml
+       ignore_errors: True
