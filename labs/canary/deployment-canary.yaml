@@ -20,6 +20,9 @@
           - "https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml"
        ignore_errors: True
 
+     - name: Deleting any existing BuildConfig previously created
+       command: oc delete bc -l deployment_technique=canary -n {{ jenkins_namespace }}
+
      - name: "Creating a Project for Deployment Canary"
        command: oc new-project {{ application_namespace }} --display-name="Deployment Canary technique"
        ignore_errors: True
@@ -97,4 +100,15 @@
        with_items: 
           - deploy-one.yaml
           - deploy-two.yaml
-       ignore_errors: True
+
+     - name: Create a label marking BuildConfig: deployment_technique=canary
+       command: oc label bc/{{ item }} deployment_technique=canary -n {{ jenkins_namespace }}
+       with_items:
+          - deploy-one
+          - deploy-two
+
+     - name: Start Building in order to make ready to Deploy
+       command: oc start-build {{ item }} -n {{ jenkins_namespace }}
+       with_items:
+          - deploy-one
+          - deploy-two
