@@ -212,10 +212,48 @@
       tags:
          - gce
 
+    - name: Creating all the necessary directory structure
+      file: path={{ ansible_user_dir }}/java/jdk/  state=directory
+      tags:
+         - java
+   
     - name: Download JDK 8
       uri: url=http://download.oracle.com/otn-pub/java/jdk/8u161-b12/2f38c3b165be4555a1fa6e98c45e0808/jdk-8u161-linux-x64.tar.gz
            headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} method=GET
-           creates=True dest=/root/java/jdk/jdk-8u161-linux-x64.tar.gz
+           creates=True dest={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz
+      tags:
+         - java
+
+    - name: Extracting JDK 8
+      unarchive: src={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz dest={{ ansible_user_dir }}/java/jdk
+      tags:
+         - java
+
+    - name: Symbolic link do JDK 8
+      file: src={{ ansible_user_dir }}/java/jdk/jdk1.8.0_161 state=link dest={{ ansible_user_dir }}/java/jdk/latest
+      tags:
+         - java
+
+    - name: Deleting original file
+      file: path={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz state=absent
+      tags:
+         - java
+
+    - name: Making JDK 8 wide available by defining {{ ansible_user_dir }}/.bashrc
+      lineinfile: path={{ ansible_user_dir }}/.bashrc   regexp="^JAVA_HOME="
+                  line="JAVA_HOME={{ ansible_user_dir }}/java/jdk/latest" state=present insertafter=EOF
+      tags:
+         - java
+
+    - name: Exporting all the necessary applications
+      lineinfile: path={{ ansible_user_dir }}/.bashrc line="export PATH JAVA_HOME"
+                  state=present insertafter=EOF
+      tags:
+         - java
+    
+    - name: Adding all the necessary applications
+      lineinfile: path={{ ansible_user_dir }}/.bashrc regexp="^PATH=" line="PATH=${PATH}:${JAVA_HOME}/bin"
+                  state=present
       tags:
          - java
 
