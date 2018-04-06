@@ -101,7 +101,7 @@
           - deploy-one.yaml
           - deploy-two.yaml
 
-     - name: Create a label marking BuildConfig: deployment_technique=canary
+     - name: "Create a label marking BuildConfig: deployment_technique=canary"
        command: oc label bc/{{ item }} deployment_technique=canary -n {{ jenkins_namespace }}
        with_items:
           - deploy-one
