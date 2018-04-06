@@ -39,7 +39,7 @@
      - name: Creating application {{ application_one }}
        command: oc new-app -f https://raw.githubusercontent.com/latam-tech-office/testdrive-cicd/master/ocp/template/wildfly-mysql.yaml -p APPLICATION_NAME={{ application_one }}
 
-     - name: Setting {{ application_one }} initial replicas size: {{ application_one_replicas }}
+     - name: "Setting {{ application_one }} initial replicas size: {{ application_one_replicas }}"
        command: oc scale dc/{{ application_one }}-app --replicas={{ application_one_replicas }}
 
      - name: Deleting an ImageStream/wildfly-mysql to avoid collision
@@ -48,7 +48,7 @@
      - name: Creating application {{ application_two }}
        command: oc new-app -f https://raw.githubusercontent.com/latam-tech-office/testdrive-cicd/master/ocp/template/wildfly-mysql.yaml -p APPLICATION_NAME={{ application_two }}
 
-     - name: Setting {{ application_two }} initial replicas size: {{ application_two_replicas }}
+     - name: "Setting {{ application_two }} initial replicas size: {{ application_two_replicas }}"
        command: oc scale dc/{{ application_two }}-app --replicas={{ application_two_replicas }}
 
      - name: Creating environment variables for each application
