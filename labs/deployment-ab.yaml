@@ -19,8 +19,7 @@
        command: "{{ item }}"
        with_items:
           - "oc delete all -l app=wildfly-mysql"
-          - "oc delete secret/tasks-blue-data"
-          - "oc delete secret/tasks-green-data"
+          - "oc delete secrets -l app=wildfly-mysql"
        ignore_errors: True
 
      - name: Creating application {{ blue }}
