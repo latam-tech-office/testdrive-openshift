@@ -1,0 +1,48 @@
+---
+- name: "Deployment AB: Preparing environment for Application"
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+     - domain: cloudapps.testdrive.com
+     - blue: tasks-blue
+     - green: tasks-green
+  tasks:
+     - name: "Creating a Project for Deployment AB"
+       command: oc new-project application-ab --display-name="Deployment AB technique"
+       ignore_errors: True
+
+     - name: "Select Project: application-ab"
+       command: oc project application-ab
+
+     - name: Deleting any existing resources
+       command: "{{ item }}"
+       with_items:
+          - "oc delete all -l app=wildfly-mysql"
+          - "oc delete secret/tasks-blue-data"
+          - "oc delete secret/tasks-green-data"
+       ignore_errors: True
+
+     - name: Creating application {{ blue }}
+       command: oc new-app -f https://raw.githubusercontent.com/latam-tech-office/testdrive-cicd/master/ocp/template/wildfly-mysql.yaml -p APPLICATION_NAME={{ blue }}
+
+     - name: Deleting an resource to avoid duplication
+       command: oc delete is/wildfly-mysql
+
+     - name: Creating application {{ green }}
+       command: oc new-app -f https://raw.githubusercontent.com/latam-tech-office/testdrive-cicd/master/ocp/template/wildfly-mysql.yaml -p APPLICATION_NAME={{ green }}
+
+     - name: Deleting existing routes
+       command: oc delete route {{ item }}
+       with_items:
+          - "{{ blue }}-app"
+          - "{{ green }}-app"
+
+     - name: Creating a single route
+       command: oc expose service/{{ blue }}-app --name=tasks --hostname=application.{{ domain }}
+       
+     - name: Creating environment variables for each application
+       command: oc env dc/{{ item.deploymentConfig }} DEPLOYMENT_NAME="{{ item.value }}"
+       with_items:
+          - { deploymentConfig: "{{ blue }}-app", value: "BLUE" }
+          - { deploymentConfig: "{{ green }}-app", value: "GREEN" }
