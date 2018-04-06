@@ -11,10 +11,10 @@
        ignore_errors: True
 
      - name: "Select Project: {{ jenkins_namespace }}"
-       command: oc project {{ jenkins_namespace }}"
+       command: oc project {{ jenkins_namespace }}
 
      - name: Provisioning all Developer Tooling for AB Deployment
-       command: oc new-app "{{ item }}"
+       command: oc new-app {{ item }}
        with_items: 
           - "jenkins-ephemeral"
           - "https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml"
