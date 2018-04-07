@@ -1,0 +1,40 @@
+[OSEv3:children]
+masters
+nodes
+etcd
+ 
+[masters]
+<YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
+ 
+[nodes]
+<YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
+<YOUR PREFIX>-infra  openshift_node_labels="{'host': 'infra'}"
+<YOUR PREFIX>-node1   openshift_node_labels="{'host': 'apps'}"
+
+[etcd]
+<YOUR PREFIX>-master
+
+[OSEv3:vars]
+deployment_type=openshift-enterprise
+
+# Make sure all Template Service Broker lies at the InfraNode
+template_service_broker_selector={"host":"infra"}
+
+# Disable some checks before installing
+openshift_disable_check=disk_availability,docker_storage,memory_availability
+ 
+# SSH user, this user should allow ssh based auth without requiring a password
+ansible_ssh_user=root
+ 
+#### default subdomain to use for exposed routes
+openshift_master_default_subdomain=cloudapps.testdrive.com
+
+openshift_hosted_router_selector='host=infra'
+openshift_router_selector='host=infra'
+
+openshift_hosted_registry_replicas=1
+openshift_hosted_registry_selector='host=infra'
+openshift_registry_selector='host=infra'
+
+openshift_hosted_metrics_deploy=true
+openshift_master_metrics_public_url=https://hawkular-metrics.cloudapps.testdrive.com/hawkular/metrics
