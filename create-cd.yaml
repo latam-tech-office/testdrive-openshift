@@ -1,0 +1,337 @@
+---
+- name: "Create 4 hosts for Continuous Delivery: Master, Infra, Node1 and Node2"
+  hosts: localhost
+  connection: connection
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - notification/mail_authentication
+  vars:
+     machine_type: n1-standard-4
+     attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
+  tasks:
+     - include: commons/setting_defaults.yaml
+       tags:
+          - always
+
+     - name: email is not defined
+       fail: msg="email is not defined"
+       when: email is not defined
+       tags:
+          - always
+
+### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+#### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+     - name: Lookup for this email{{ ':' }} {{ email }}
+       set_fact: line_selected={{ item }}
+       with_items: "{{ attendees }}"
+       when: email in item
+       tags:
+          - always
+
+     - fail: msg="{{ email }} wasn't found into file ops-attendees.txt"
+       when: line_selected is not defined
+       tags:
+          - always
+
+     - set_fact: user_id={{ line_selected.split(',')[0] }}
+       tags:
+         - always
+
+     - set_fact: name={{ line_selected.split(',')[1] }}
+       tags:
+          - always
+
+     - name: "Defining OpenShift's Master: {{ user_id }}-master"
+       set_fact: openshift_master="{{ user_id }}-master"
+       tags:
+          - always
+
+     - name: "Defining OpenShift's Infra: {{ user_id }}-infra"
+       set_fact: openshift_infra="{{ user_id }}-infra"
+       tags:
+          - always
+
+     - name: "Defining OpenShift's Node: {{ user_id }}-node1"
+       set_fact: openshift_node1="{{ user_id }}-node1"
+       tags:
+          - always
+
+     - name: "Defining OpenShift's Node: {{ user_id }}-node2"
+       set_fact: openshift_node2="{{ user_id }}-node2"
+       tags:
+          - always
+
+### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
+#### MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER 
+     - name: "MASTER: Creating instance: {{ openshift_master }}"
+       gce:
+         instance_names: "{{ openshift_master }}"
+         state: "present"
+         machine_type: "{{ machine_type }}"
+         image: "{{ image }}"
+         zone: "{{ zone }}"
+         network: "{{ network_name }}"
+         subnetwork: "{{ subnetwork_name }}"
+         tags: ["enable-ssh","openshift-master"]
+         disk_auto_delete: True
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: master_instance_creation
+
+     - debug: var=master_instance_creation
+
+     - name: "MASTER: Getting OpenShift's Master Public IP: {{ master_instance_creation.instance_data[0].public_ip }}"
+       set_fact: openshift_master_public_ip={{ master_instance_creation.instance_data[0].public_ip }}
+
+     - name: "MASTER: Attaching a Docker storage: {{ openshift_master }}"
+       gce_pd:
+         instance_name: "{{ openshift_master }}"
+         name: "{{ openshift_master }}-docker"
+         state: present
+         mode: READ_WRITE
+         disk_type: pd-standard
+         size_gb: "{{ docker_size }}"
+         delete_on_termination: True
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       tags: 
+          - master_docker_storage
+
+### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
+#### INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA INFRA 
+     - name: "INFRA: Creating instance: {{ openshift_infra }}"
+       gce:
+         instance_names: "{{ openshift_infra }}"
+         state: "present"
+         machine_type: "{{ machine_type }}"
+         image: "{{ image }}"
+         zone: "{{ zone }}"
+         network: "{{ network_name }}"
+         subnetwork: "{{ subnetwork_name }}"
+         tags: ["enable-ssh","openshift-infra-node"]
+         disk_auto_delete: True
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: infra_instance_creation
+
+     - debug: var=infra_instance_creation
+
+     - name: "INFRA: Getting OpenShift's Infra Public IP: {{ infra_instance_creation.instance_data[0].public_ip }}"
+       set_fact: openshift_infra_public_ip={{ infra_instance_creation.instance_data[0].public_ip }}
+
+     - name: "INFRA: Attaching a Docker storage: {{ openshift_infra }}"
+       gce_pd:
+         instance_name: "{{ openshift_infra }}"
+         name: "{{ openshift_infra }}-docker"
+         state: present
+         mode: READ_WRITE
+         disk_type: pd-standard
+         size_gb: "{{ docker_size }}"
+         delete_on_termination: True
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+
+
+### NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE 
+#### NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE NODE 
+     - name: "NODE 1: Creating instance: {{ openshift_node1 }}"
+       gce:
+         instance_names: "{{ openshift_node1 }}"
+         state: "present"
+         machine_type: "{{ machine_type }}"
+         image: "{{ image }}"
+         zone: "{{ zone }}"
+         network: "{{ network_name }}"
+         subnetwork: "{{ subnetwork_name }}"
+         tags: ["enable-ssh"]
+         disk_auto_delete: True
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: node_instance_creation1
+
+     - debug: var=node_instance_creation1
+
+     - name: "NODE 1: Getting OpenShift's Node Public IP: {{ node_instance_creation1.instance_data[0].public_ip }}"
+       set_fact: openshift_node1_public_ip={{ node_instance_creation1.instance_data[0].public_ip }}
+
+     - name: "NODE 1: Attaching a Docker storage: {{ openshift_node1 }}"
+       gce_pd:
+         instance_name: "{{ openshift_node1 }}"
+         name: "{{ openshift_node1 }}-docker"
+         state: present
+         mode: READ_WRITE
+         disk_type: pd-standard
+         size_gb: "{{ docker_size }}"
+         delete_on_termination: True
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+
+     - name: "NODE 2: Creating instance: {{ openshift_node2 }}"
+       gce:
+         instance_names: "{{ openshift_node2 }}"
+         state: "present"
+         machine_type: "{{ machine_type }}"
+         image: "{{ image }}"
+         zone: "{{ zone }}"
+         network: "{{ network_name }}"
+         subnetwork: "{{ subnetwork_name }}"
+         tags: ["enable-ssh"]
+         disk_auto_delete: True
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       register: node_instance_creation2
+
+     - debug: var=node_instance_creation2
+
+     - name: "NODE 2: Getting OpenShift's Node Public IP: {{ node_instance_creation2.instance_data[0].public_ip }}"
+       set_fact: openshift_node2_public_ip={{ node_instance_creation2.instance_data[0].public_ip }}
+
+     - name: "NODE 2: Attaching a Docker storage: {{ openshift_node2 }}"
+       gce_pd:
+         instance_name: "{{ openshift_node2 }}"
+         name: "{{ openshift_node2 }}-docker"
+         state: present
+         mode: READ_WRITE
+         disk_type: pd-standard
+         size_gb: "{{ docker_size }}"
+         delete_on_termination: True
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+         
+     - name: "MASTER: Wait for OpenShift's Master instance to be up: {{ openshift_master_public_ip }}"
+       wait_for: host="{{ openshift_master_public_ip }}" port={{ ssh_default_image_port }}
+                 delay=30  state=started       
+
+     - name: "INFRA: Wait for OpenShift's Infra instance to be up: {{ openshift_infra_public_ip }}"
+       wait_for: host="{{ openshift_master_public_ip }}" port={{ ssh_default_image_port }}
+                 delay=30  state=started
+                 
+     - name: "NODE 1: Wait for OpenShift's Node instance to be up: {{ openshift_node1_public_ip }}"
+       wait_for: host="{{ openshift_node1_public_ip }}" port={{ ssh_default_image_port }}
+                 delay=30  state=started
+
+     - name: "NODE 2: Wait for OpenShift's Node instance to be up: {{ openshift_node2_public_ip }}"
+       wait_for: host="{{ openshift_node2_public_ip }}" port={{ ssh_default_image_port }}
+                 delay=30  state=started
+
+### CREATING AN INVENTORY CREATING AN INVENTORY CREATING AN INVENTORY CREATING AN
+#### CREATING AN INVENTORY CREATING AN INVENTORY CREATING AN INVENTORY CREATING AN INVENTORY 
+     
+     - name: "MASTER: Adding OpenShift's Master into group: openshift_master_group"
+       add_host: groups=openshift_master_group hostname={{ openshift_master_public_ip }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}
+                 user_id={{ user_id }}
+
+     - name: "INFRA: Adding OpenShift's Infra into group: openshift_infra_group"
+       add_host: groups=openshift_infra_group hostname={{ openshift_infra_public_ip }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}       
+
+     - name: "NODE 1: Adding OpenShift's Node 1 into group: openshift_node_group"
+       add_host: groups=openshift_node_group hostname={{ openshift_node1_public_ip }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}
+
+     - name: "NODE 2: Adding OpenShift's Node 2 into group: openshift_node_group"
+       add_host: groups=openshift_node_group hostname={{ openshift_node2_public_ip }}
+                 ansible_user={{ ssh_default_image_user }} ansible_password={{ ssh_default_image_password }}
+                 ansible_port={{ ssh_default_image_port }}
+
+### PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER 
+#### PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER PREPARE MASTER 
+- name: Adding some playbooks for easy each Labs exercise
+  hosts: openshift_master_group
+  gather_facts: False
+  tasks:
+     - name: "MASTER: Create directory /root/labs"
+       file: path=/root/labs state=directory 
+
+     - name: "MASTER: Download all playbooks for labs"
+       uri: url=https://raw.githubusercontent.com/latam-tech-office/testdrive-openshift/master/labs/{{ item }}
+            method=GET status_code=200 creates=True dest=/root/labs/{{ item }}
+       with_items: 
+             - prepare-cluster.yaml
+             - ansible.cfg
+             - reset-cluster.yaml
+
+     - name: "MASTER: Adapt prepare-cluster.yaml to run with current user"
+       replace: path=/root/labs/prepare-cluster.yaml regexp="maltron" replace="{{ user_id }}"
+
+### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
+#### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
+- name: Preparing all the hosts with a basic configuration
+  hosts: openshift_master_group, openshift_infra_group, openshift_node_group
+  gather_facts: False
+  vars_files:
+     - gce/defaults
+  tasks:
+     - name: "CLUSTER: Loading SSH KEY from localhost (if any)"
+       set_fact: ssh_key="{{ lookup('file','{{ ssh_key_file }}') }}"
+       when: ssh_key_file is defined
+       tags:
+          - prepare
+
+     - name: "CLUSTER: Copy a SSH Key (if does exist)"
+       lineinfile: dest=/root/.ssh/authorized_keys state=present create=yes line="{{ ssh_key }}"
+       when: ssh_key is defined
+       tags:
+          - prepare
+
+     - name: "CLUSTER: Make sure no subscription will be used"
+       command: subscription-manager unregister
+       ignore_errors: True
+
+     - name: "CLUSTER: Generating a list of repository for all hosts"
+       template: src=templates/openshift.repo.j2 dest=/etc/yum.repos.d/openshift.repo
+
+### FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS  
+#### FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS FINAL STEPS 
+- name: Final Steps. Removing undesirable tags and notifying user
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - notification/mail_authentication
+     - notification/slack_authentication
+  tasks:
+     - include: commons/setting_defaults.yaml
+
+     - name: Removing SSH
+       gce_tag:
+         instance_name: "{{ openshift_infra }}"
+         tags: "enable-ssh"
+         state: "absent"
+         zone: "{{ zone }}"
+         project_id: "{{ gce_project_id }}"
+         pem_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       with_items:
+          - "{{ openshift_infra }}"
+          - "{{ openshift_node1 }}"
+          - "{{ openshift_node2 }}"
+
+     - include: commons/ops-mail.yaml
+       when: default_smtp_server is defined and default_smtp_server is not none and default_smtp_port is defined and default_smtp_port is not none and default_smtp_username is defined and default_smtp_username is not none and default_smtp_password is defined and default_smtp_password is not none
+       tags:
+          - mail

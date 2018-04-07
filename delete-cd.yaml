@@ -1,0 +1,46 @@
+---
+- name: Delete all 3 Hosts for OpenShift TestDrive@Ops{{ ':' }} Master, Infra and Node
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - notification/slack_authentication
+  vars:
+     attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
+  tasks:
+     - include: commons/setting_defaults.yaml
+
+     - name: email is not defined
+       fail: msg="email is not defined"
+       when: email is not defined
+
+### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+#### USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME LOOKUP USERNAME
+     - name: Lookup for this email{{ ':' }} {{ email }}
+       set_fact: line_selected={{ item }}
+       with_items: "{{ attendees }}"
+       when: email in item
+
+     - fail: msg="{{ email }} wasn't found into file ops-attendees.txt"
+       when: line_selected is not defined
+
+     - set_fact: user_id={{ line_selected.split(',')[0] }}
+     - set_fact: name={{ line_selected.split(',')[1] }}
+
+     - name: "DELETE: Deleting all instances"
+       gce:
+         instance_names: "{{ item }}"
+         zone: "{{ zone }}"
+         state: "absent"
+         project_id: "{{ gce_project_id }}"
+         credentials_file: "{{ gce_credentials_file }}"
+         service_account_email: "{{ gce_service_account_email }}"
+       ignore_errors: True
+       with_items: 
+          - "{{ user_id }}-master"
+          - "{{ user_id }}-infra"
+          - "{{ user_id }}-node1"
+          - "{{ user_id }}-node2"
+       register: master_instance_status  
