@@ -94,6 +94,7 @@
          - psacct
          - screen
          - python-pip
+         - atomic-openshift-clients
   tasks:
     - name: "GCE: Check if there is content into directory {{ gce_serviceaccount_directory }}"
       local_action: stat path={{ gce_serviceaccount_directory }}
@@ -212,68 +213,137 @@
       tags:
          - gce
 
-    - name: Creating all the necessary directory structure
+    - name: "JDK: Creating all the necessary directory structure"
       file: path={{ ansible_user_dir }}/java/jdk/  state=directory
       tags:
          - java
    
-    - name: Download JDK 8
+    - name: "JDK: Download JDK 8"
       uri: url=http://download.oracle.com/otn-pub/java/jdk/8u161-b12/2f38c3b165be4555a1fa6e98c45e0808/jdk-8u161-linux-x64.tar.gz
            headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} method=GET
            creates=True dest={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz
       tags:
          - java
 
-    - name: Extracting JDK 8
+    - name: "JDK: Extracting JDK 8"
       unarchive: src={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz dest={{ ansible_user_dir }}/java/jdk
       tags:
          - java
 
-    - name: Symbolic link do JDK 8
+    - name: "JDK: Symbolic link do JDK 8"
       file: src={{ ansible_user_dir }}/java/jdk/jdk1.8.0_161 state=link dest={{ ansible_user_dir }}/java/jdk/latest
       tags:
          - java
 
-    - name: Deleting original file
+    - name: "JDK: Deleting original file"
       file: path={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz state=absent
       tags:
          - java
 
-    - name: Making JDK 8 wide available by defining {{ ansible_user_dir }}/.bashrc
+    - name: "JDK: Making JDK 8 wide available by defining {{ ansible_user_dir }}/.bashrc"
       lineinfile: path={{ ansible_user_dir }}/.bashrc   regexp="^JAVA_HOME="
                   line="JAVA_HOME={{ ansible_user_dir }}/java/jdk/latest" state=present insertafter=EOF
       tags:
          - java
+         - bash_rc
 
-    - name: Exporting all the necessary applications
-      lineinfile: path={{ ansible_user_dir }}/.bashrc line="export PATH JAVA_HOME"
+    - name: "MAVEN: Create directory for Maven"
+      file: path={{ ansible_user_dir }}/java/tools/apache/maven/
+            state=directory
+      tags: 
+        - java
+        - maven
+
+    - name: "MAVEN: Download Maven"
+      uri: url=http://ftp.unicamp.br/pub/apache/maven/maven-3/3.5.3/binaries/apache-maven-3.5.3-bin.tar.gz
+           method=GET creates=True dest={{ ansible_user_dir }}/java/tools/apache/maven/apache-maven-3.5.3-bin.tar.gz
+      tags:
+         - java
+         - maven
+
+    - name: "MAVEN: Extracting Maven"
+      unarchive: src={{ ansible_user_dir }}/java/tools/apache/maven/apache-maven-3.5.3-bin.tar.gz dest={{ ansible_user_dir }}/java/tools/apache/maven/
+      tags:
+         - java
+         - maven
+
+    - name: "MAVEN: Symbolic link to Maven"
+      file: src={{ ansible_user_dir }}/java/tools/apache/maven/apache-maven-3.5.3 state=link 
+            dest={{ ansible_user_dir }}/java/tools/apache/maven/latest
+      tags:
+         - java
+         - maven
+
+    - name: "MAVEN: Deleting original file"
+      file: path={{ ansible_user_dir }}/java/tools/apache/maven/apache-maven-3.5.3-bin.tar.gz state=absent
+      tags:
+         - java       
+         - maven
+
+    - name: "MAVEN: Making Maven wide available by defining {{ ansible_user_dir }}/.bashrc"
+      lineinfile: path={{ ansible_user_dir }}/.bashrc   regexp="^MAVEN_HOME="
+                  line="MAVEN_HOME={{ ansible_user_dir }}/java/tools/apache/maven/latest" state=present insertafter=EOF
+      tags:
+         - java
+         - maven
+         - bash_rc
+
+    - name: "WILDFLY: Create directory for WildFly"
+      file: path={{ ansible_user_dir }}/java/server/as/redhat/wildfly
+            state=directory
+      tags:
+         - java
+         - wildfly
+
+    - name: "WILDFLY: Download WildFly"
+      uri: url=http://download.jboss.org/wildfly/12.0.0.Final/wildfly-12.0.0.Final.tar.gz
+           method=GET creates=True dest={{ ansible_user_dir }}/java/server/as/redhat/wildfly/wildfly-12.0.0.Final.tar.gz
+      tags:
+         - java
+         - wildfly
+
+    - name: "WILDFLY: Extracting WildFly"
+      unarchive: src={{ ansible_user_dir }}/java/server/as/redhat/wildfly/wildfly-12.0.0.Final.tar.gz
+                 dest={{ ansible_user_dir }}/java/server/as/redhat/wildfly/
+      tags:
+         - java
+         - wildfly
+
+    - name: "WILDFLY: Symbolic link to WildFly"
+      file: src={{ ansible_user_dir }}/java/server/as/redhat/wildfly/wildfly-12.0.0.Final
+            dest={{ ansible_user_dir }}/java/server/as/redhat/wildfly/latest
+            state=link
+      tags:
+         - java
+         - wildfly
+
+    - name: "WILDFLY: Deleting original file"
+      file: path={{ ansible_user_dir }}/java/server/as/redhat/wildfly/wildfly-12.0.0.Final.tar.gz
+            state=absent
+      tags:
+         - java
+         - wildfly
+
+    - name: "WILDFLY: Making WildFly wide available by defining {{ ansible_user_dir }}/.bashrc"
+      lineinfile: path={{ ansible_user_dir }}/.bashrc   regexp="^JBOSS_HOME="
+                  line="JBOSS_HOME={{ ansible_user_dir }}/java/server/as/redhat/wildfly/latest" state=present insertafter=EOF
+      tags:
+         - java
+         - wildfly
+
+    - name: "BASHRC: Adding all the necessary applications"
+      lineinfile: path={{ ansible_user_dir }}/.bashrc regexp="^PATH=" state=present
+                  line="PATH=${PATH}:${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${JBOSS_HOME}/bin"
+      tags:
+         - java
+         - bash_rc
+
+    - name: "BASHRC: Exporting all the necessary applications"
+      lineinfile: path={{ ansible_user_dir }}/.bashrc line="export PATH JAVA_HOME MAVEN_HOME JBOSS_HOME"
                   state=present insertafter=EOF
       tags:
          - java
-    
-    - name: Adding all the necessary applications
-      lineinfile: path={{ ansible_user_dir }}/.bashrc regexp="^PATH=" line="PATH=${PATH}:${JAVA_HOME}/bin"
-                  state=present
-      tags:
-         - java
-
-    - name: Download Maven
-      uri: url=http://ftp.unicamp.br/pub/apache/maven/maven-3/3.5.3/binaries/apache-maven-3.5.3-bin.tar.gz
-           method=GET creates=True dest=/root/java/tools/apache/maven/apache-maven-3.5.3-bin.tar.gz
-      tags:
-         - java
-
-    - name: Download WildFly
-      uri: url=http://download.jboss.org/wildfly/12.0.0.Final/wildfly-12.0.0.Final.tar.gz
-           method=GET creates=True dest=/root/java/server/as/wildfly/wildfly-12.0.0.Final.tar.gz
-      tags:
-         - java
-
-    - name: Download OpenShift Client
-      uri: url=https://access.cdn.redhat.com//content/origin/files/sha256/03/0313a26852c6f2abd2d1a07e3fa2f41bf32b89bb76c00ec664a6d7378136b157/oc-3.9.14-linux.tar.gz?_auth_=1522985230_735b4f0e7d5da69469357102b1d47dc9
-           method=GET creates=True dest=/root/java/tools/openshift/client/latest/oc-3.9.14-linux.tar.gz
-      tags:
-         - java
+         - bash_rc
 
     - name: "Informing Bastion IP: {{ bastion_public_ip }}"
       debug: msg="Bastion is Ready{{ ':' }} ssh root@{{ bastion_public_ip }}"
