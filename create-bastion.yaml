@@ -116,7 +116,7 @@
          - gce
 
     - name: Git cloning LATAM Tech Office Playbooks
-      git: repo=https://github.com/latam-tech-office/{{ item }} dest=/root/{{ item }}
+      git: repo=git@github.com:latam-tech-office/{{ item }} dest=/root/{{ item }}
       with_items:
          - testdrive-openshift
          - install-openshift
