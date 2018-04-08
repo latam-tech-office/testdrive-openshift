@@ -1,0 +1,26 @@
+---
+- name: Stopping any instance
+  hosts: localhost
+  connection: local
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+  tasks:
+    - include: commons/setting_defaults.yaml
+      tags:
+         - always
+
+    - name: instance is not defined
+      fail: msg="instance is not defined"
+      when: instance is not defined
+      tags:
+         - always
+
+    - name: "Stopping instance named: {{ instance }}"
+      gce:
+        instance_names: "{{ instance }}"
+        state: "stopped"
+        zone: "{{ zone }}"
+        project_id: "{{ gce_project_id }}"
+        credentials_file: "{{ gce_credentials_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
