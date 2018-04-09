@@ -1,7 +1,7 @@
 jenkins_namespace: tooling
 domain: testdrive.com
 cloudapps: cloudapps.{{ domain }}
-application_namespace: application-canary
+application_namespace: canary-example
 application_one: tasks-one
 application_one_replicas: 5
 application_two: tasks-two

@@ -18,13 +18,13 @@ spec:
       jenkinsfile: |-
         node('maven') {
            stage ('Build') {
-             git 'https://github.com/latam-tech-office/openshift-tasks-testdrive'
+             git 'http://gogs:3000/demo/openshift-tasks-testdrive'
              sh "mvn clean install -s configuration/cicd-settings.xml -DskipTests=true"
            }
    
            stage('Deploy') {
-             sh "oc project application-canary"
-             sh "oc start-build tasks-one-app --from-file target/openshift-tasks.war --follow --wait=true -n application-canary"
+             sh "oc project canary-example"
+             sh "oc start-build tasks-one-app --from-file target/openshift-tasks.war --follow --wait=true -n canary-example"
            }
         }
     type: JenkinsPipeline
