@@ -18,7 +18,7 @@ spec:
       jenkinsfile: |-
         node('maven') {
            stage('Release') {
-              sh "oc patch route/tasks --patch '{\"spec\":{\"to\":{\"name\":\"tasks-green-app\"}}}' -n application-ab"
+              sh "oc patch route/tasks --patch '{\"spec\":{\"to\":{\"name\":\"tasks-green-app\"}}}' -n bluegreen-example"
            }
         }
     type: JenkinsPipeline
