@@ -23,7 +23,7 @@ spec:
            }
    
            stage('Deploy') {
-             sh "oc start-build tasks --from-file target/openshift-tasks.war --follow --wait=true -n rollout-example"
+             sh "oc start-build tasks-app --from-file target/openshift-tasks.war --follow --wait=true -n rollout-example"
            }
         }
     type: JenkinsPipeline
