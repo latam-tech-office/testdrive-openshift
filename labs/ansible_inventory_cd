@@ -29,12 +29,12 @@ ansible_ssh_user=root
 #### default subdomain to use for exposed routes
 openshift_master_default_subdomain=cloudapps.testdrive.com
 
-#openshift_hosted_router_selector='host=infra'
-#openshift_router_selector='host=infra'
+openshift_hosted_router_selector='host=infra'
+openshift_router_selector='host=infra'
 
-#openshift_hosted_registry_replicas=1
-#openshift_hosted_registry_selector='host=infra'
-#openshift_registry_selector='host=infra'
+openshift_hosted_registry_replicas=1
+openshift_hosted_registry_selector='host=infra'
+openshift_registry_selector='host=infra'
 
 #openshift_hosted_metrics_deploy=true
 #openshift_master_metrics_public_url=https://hawkular-metrics.cloudapps.testdrive.com/hawkular/metrics
