@@ -1,0 +1,16 @@
+---
+- name: "Delete ALL attendees from TestDrive CD"
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files:
+     - gce/authentication
+     - gce/defaults
+     - notification/slack_authentication
+  vars:
+     attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
+  tasks:
+     - include_tasks: commons/setting_defaults.yaml
+
+     - include_tasks: commons/delete-single-cd.yaml user_id={{ item.split(',')[0] }}
+       with_items: "{{ attendees }}"
