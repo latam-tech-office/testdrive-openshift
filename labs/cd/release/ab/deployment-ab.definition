@@ -1,6 +1,0 @@
-jenkins_namespace: tooling
-domain: testdrive.com
-cloudapps: cloudapps.{{ domain }}
-application_namespace: application-ab
-application_blue: tasks-blue
-application_green: tasks-green
