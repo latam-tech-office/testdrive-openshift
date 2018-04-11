@@ -279,7 +279,7 @@
 ### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 ###   PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 - name: (PREPARE) Preparing all hosts to install OpenShift
-  hosts: all
+  hosts: openshift_master_group, openshift_infra_group, openshift_node_group
   gather_facts: False
   vars_files:
      - gce/defaults

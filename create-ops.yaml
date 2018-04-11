@@ -10,7 +10,7 @@
   vars:
      attendees: "{{ lookup('file', 'ops-attendees.txt').split('\n') }}"
   tasks:
-     - include: commons/setting_defaults.yaml
+     - include_tasks: commons/setting_defaults.yaml
        tags:
           - always
 
@@ -265,7 +265,7 @@
      - notification/mail_authentication
      - notification/slack_authentication
   tasks:
-     - include: commons/setting_defaults.yaml
+     - include_tasks: commons/setting_defaults.yaml
 
      - name: Removing SSH capability from OpenShift's Infra
        gce_tag:
@@ -287,7 +287,7 @@
          pem_file: "{{ gce_credentials_file }}"
          service_account_email: "{{ gce_service_account_email }}"
 
-     - include: commons/ops-mail.yaml
+     - include_tasks: commons/ops-mail.yaml
        when: default_smtp_server is defined and default_smtp_server is not none and default_smtp_port is defined and default_smtp_port is not none and default_smtp_username is defined and default_smtp_username is not none and default_smtp_password is defined and default_smtp_password is not none
        tags:
           - mail
