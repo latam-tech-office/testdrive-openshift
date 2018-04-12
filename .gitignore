@@ -1,6 +1,4 @@
 *.swp
 *.retry
-install_openshift.sh
-install_openshift_rhmap.sh
 gce/
 notification/
