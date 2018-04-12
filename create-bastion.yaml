@@ -64,7 +64,6 @@
 #### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE
 - name: (PREPARE) Preparing all the hosts with a basic configuration
   hosts: bastion_group
-  gather_facts: False
   vars:
      subscription_name: "Employee SKU"
      subscription_type: "Virtual"
@@ -116,10 +115,11 @@
          - gce
 
     - name: Git cloning LATAM Tech Office Playbooks
-      git: repo=git@github.com:latam-tech-office/{{ item }} dest=/root/{{ item }}
+      git: repo=https://github.com/latam-tech-office/{{ item }} dest=/root/{{ item }}
       with_items:
          - testdrive-openshift
          - install-openshift
+         - openshift-utils
 
     - name: Loading SSH KEY from localhost (if any)
       set_fact: ssh_key="{{ lookup('file','{{ ssh_key_file }}') }}"
@@ -226,7 +226,9 @@
          - java
 
     - name: "JDK: Extracting JDK 8"
-      unarchive: src={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz dest={{ ansible_user_dir }}/java/jdk
+      unarchive: src={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz 
+                 dest={{ ansible_user_dir }}/java/jdk
+                 remote_src=True
       tags:
          - java
 
@@ -262,7 +264,9 @@
          - maven
 
     - name: "MAVEN: Extracting Maven"
-      unarchive: src={{ ansible_user_dir }}/java/tools/apache/maven/apache-maven-3.5.3-bin.tar.gz dest={{ ansible_user_dir }}/java/tools/apache/maven/
+      unarchive: src={{ ansible_user_dir }}/java/tools/apache/maven/apache-maven-3.5.3-bin.tar.gz 
+                 dest={{ ansible_user_dir }}/java/tools/apache/maven/
+                 remote_src=True
       tags:
          - java
          - maven
@@ -305,6 +309,7 @@
     - name: "WILDFLY: Extracting WildFly"
       unarchive: src={{ ansible_user_dir }}/java/server/as/redhat/wildfly/wildfly-12.0.0.Final.tar.gz
                  dest={{ ansible_user_dir }}/java/server/as/redhat/wildfly/
+                 remote_src=True
       tags:
          - java
          - wildfly
