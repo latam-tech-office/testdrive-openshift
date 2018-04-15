@@ -16,6 +16,7 @@
      - name: Provisioning all Developer Tooling for Blue-Green Deployment
        command: oc new-app {{ item }}
        with_items: 
+          - "-f http://bit.ly/openshift-gogs-persistent-template -p SKIP_TLS_VERIFY=true"
           - "jenkins-ephemeral"
           - "https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml"
        ignore_errors: True
@@ -68,7 +69,7 @@
           - "{{ application_green }}-app"
 
      - name: Creating a single route
-       command: oc expose service/{{ application_blue }}-app --name=tasks --hostname={{ application_namespace }}.{{ cloudapps }}
+       command: oc expose service/{{ application_blue }}-app --name=tasks
        
      - name: Creating environment variables for each application
        command: oc env dc/{{ item.deploymentConfig }} DEPLOYMENT_NAME="{{ item.value }}"
