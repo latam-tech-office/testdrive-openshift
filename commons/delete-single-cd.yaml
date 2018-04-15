@@ -1,0 +1,14 @@
+- name: "DELETE: Deleting all instances for user: {{ user_id }}"
+  gce:
+     instance_names: "{{ item }}"
+     zone: "{{ zone }}"
+     state: "absent"
+     project_id: "{{ gce_project_id }}"
+     credentials_file: "{{ gce_credentials_file }}"
+     service_account_email: "{{ gce_service_account_email }}"
+  ignore_errors: True
+  with_items: 
+      - "{{ user_id }}-master"
+      - "{{ user_id }}-infra"
+      - "{{ user_id }}-node1"
+      - "{{ user_id }}-node2"
