@@ -1,7 +1,8 @@
 ---
-- name: Starting any instance and writing into /etc/hosts
+- name: Starting  any instance and writing into /etc/hosts
   hosts: localhost
   connection: local
+  become: True
   vars_files:
      - gce/authentication
      - gce/defaults
