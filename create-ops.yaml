@@ -291,7 +291,3 @@
        when: default_smtp_server is defined and default_smtp_server is not none and default_smtp_port is defined and default_smtp_port is not none and default_smtp_username is defined and default_smtp_username is not none and default_smtp_password is defined and default_smtp_password is not none
        tags:
           - mail
-
-     - name: Notifying by Slack about sucessfully creation
-       slack: token={{ default_slack_token }} msg="TestDrive@Ops{{ ':' }} Environment for {{ name }} ({{ user_id }}) was successfully created"
-       when: default_slack_token is defined and default_slack_token is not none

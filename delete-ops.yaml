@@ -95,7 +95,3 @@
          credentials_file: "{{ gce_credentials_file }}"
          service_account_email: "{{ gce_service_account_email }}"
        ignore_errors: True 
-
-     - name: Notifying by Slack about sucessfully deletion
-       slack: token={{ default_slack_token }} msg="TestDrive@Ops{{ ':'}} Environment for {{ name }} ({{ user_id }}) was successfully deleted"
-       when: default_slack_token is defined and default_slack_token is not none
