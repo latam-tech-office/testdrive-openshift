@@ -1,2 +1,8 @@
 *.swp
 *.retry
+bin/install_openshift.sh
+gce/authentication
+gce/authentication_dns
+gce/defaults
+notification/mail_authentication
+notification/slack_authentication
