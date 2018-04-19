@@ -12,4 +12,3 @@ ssh_default_image_password:
 ssh_default_image_port: 
 openshift_repository_ip: 
 ssh_key_file: 
-
