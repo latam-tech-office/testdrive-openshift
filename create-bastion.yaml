@@ -8,6 +8,8 @@
   vars:
      - bastion_name: "bastion"
      - bastion_machine_type: n1-standard-2
+     - bastion_disk_type: pd-standard
+     - bastion_disk_size: 100
      - gce_serviceaccount_directory: "{{ ansible_user_dir }}/.gce"
   tasks:
     - include: commons/setting_defaults.yaml
@@ -24,17 +26,32 @@
       tags:
          - always
 
+    - name: "Creating disk: {{ bastion_name }}"
+      gce_pd:
+        name: "{{ bastion_name }}"
+        state: present
+        mode: READ_WRITE
+        image: "{{ image }}"
+        disk_type: "{{ bastion_disk_type }}"
+        size_gb: "{{ bastion_disk_size }}"
+        zone: "{{ zone }}"
+        project_id: "{{ gce_project_id }}"
+        credentials_file: "{{ gce_credentials_file }}"
+        service_account_email: "{{ gce_service_account_email }}"
+
     - name: "Creating a instance named: {{ bastion_name }}"
       gce:
         instance_names: "{{ bastion_name }}"
         state: "present"
         machine_type: "{{ bastion_machine_type }}"
-        image: "{{ image }}"
         zone: "{{ zone }}"
         network: "{{ network_name }}"
         subnetwork: "{{ subnetwork_name }}"
         tags: "enable-ssh"
         disk_auto_delete: True
+        disks:
+           - name: "{{ bastion_name }}"
+             mode: READ_WRITE
         project_id: "{{ gce_project_id }}"
         credentials_file: "{{ gce_credentials_file }}"
         service_account_email: "{{ gce_service_account_email }}"
