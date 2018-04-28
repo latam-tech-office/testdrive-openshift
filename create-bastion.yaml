@@ -259,24 +259,24 @@
     - name: "JDK: Download JDK 8"
       uri: url=http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a58eab1ec242421181065cdc37240b08/jdk-8u172-linux-x64.tar.gz
            headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} method=GET
-           creates=True dest={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz
+           creates=True dest={{ ansible_user_dir }}/java/jdk/jdk-8u172-linux-x64.tar.gz
       tags:
          - java
 
     - name: "JDK: Extracting JDK 8"
-      unarchive: src={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz 
+      unarchive: src={{ ansible_user_dir }}/java/jdk/jdk-8u172-linux-x64.tar.gz
                  dest={{ ansible_user_dir }}/java/jdk
                  remote_src=True
       tags:
          - java
 
     - name: "JDK: Symbolic link do JDK 8"
-      file: src={{ ansible_user_dir }}/java/jdk/jdk1.8.0_161 state=link dest={{ ansible_user_dir }}/java/jdk/latest
+      file: src={{ ansible_user_dir }}/java/jdk/jdk1.8.0_172 state=link dest={{ ansible_user_dir }}/java/jdk/latest
       tags:
          - java
 
     - name: "JDK: Deleting original file"
-      file: path={{ ansible_user_dir }}/java/jdk/jdk-8u161-linux-x64.tar.gz state=absent
+      file: path={{ ansible_user_dir }}/java/jdk/jdk-8u172-linux-x64.tar.gz state=absent
       tags:
          - java
 
