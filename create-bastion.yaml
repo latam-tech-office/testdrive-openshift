@@ -111,6 +111,8 @@
          - screen
          - python-pip
          - atomic-openshift-clients
+         - deltarpm
+         - qemu-img
   tasks:
     - name: "GCE: Check if there is content into directory {{ gce_serviceaccount_directory }}"
       local_action: stat path={{ gce_serviceaccount_directory }}
