@@ -16,7 +16,7 @@
      - name: Provisioning all Developer Tooling for Blue-Green Deployment
        command: oc new-app {{ item }}
        with_items: 
-          - "-f http://bit.ly/openshift-gogs-persistent-template -p SKIP_TLS_VERIFY=true"
+          - "-f http://bit.ly/openshift-gogs-persistent-template -p SKIP_TLS_VERIFY=true -p HOSTNAME=gogs.{{ cloudapps }}"
           - "jenkins-ephemeral"
           - "https://raw.githubusercontent.com/OpenShiftDemos/nexus-openshift-docker/master/nexus-persistent.yaml"
        ignore_errors: True
