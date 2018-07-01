@@ -7,7 +7,7 @@ etcd
 <YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
  
 [nodes]
-<YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
+<YOUR PREFIX>-master openshift_node_labels="{'host': 'master'}"
 <YOUR PREFIX>-infra  openshift_node_labels="{'host': 'infra'}"
 <YOUR PREFIX>-node   openshift_node_labels="{'host': 'apps'}"
 
@@ -36,5 +36,14 @@ openshift_hosted_registry_replicas=1
 openshift_hosted_registry_selector='host=infra'
 openshift_registry_selector='host=infra'
 
-openshift_hosted_metrics_deploy=true
-openshift_master_metrics_public_url=https://hawkular-metrics.cloudapps.testdrive.com/hawkular/metrics
+#### Metrics deployment
+#### # See: https://docs.openshift.com/enterprise/latest/install_config/cluster_metrics.html
+openshift_metrics_install_metrics=True
+openshift_metrics_hawkular_hostname=hawkular-metrics.cloudapps.testdrive.com
+
+# Fix a bug on OCP 3.9.30
+oreg_url=registry.access.redhat.com/openshift3/ose-${component}:${version}
+openshift_storage_glusterfs_heketi_image=registry.access.redhat.com/rhgs3/rhgs-volmanager-rhel7
+openshift_storage_glusterfs_image=registry.access.redhat.com/rhgs3/rhgs-server-rhel7
+openshift_storage_glusterfs_block_image=registry.access.redhat.com/rhgs3/rhgs-gluster-block-prov-rhel7
+openshift_storage_glusterfs_s3_image=registry.access.redhat.com/rhgs3/rhgs-gluster-s3-server-rhel7
