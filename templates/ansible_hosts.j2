@@ -58,11 +58,14 @@ openshift_logging_install_logging=true
 #### #
 #### # By default metrics are not automatically deployed, set this to enable them
 
-# RECOMMENDED BY NOT WORKING
-# openshift_metrics_install_metrics=True
-openshift_hosted_metrics_deploy=true
+#### Metrics deployment
+#### # See: https://docs.openshift.com/enterprise/latest/install_config/cluster_metrics.html
+openshift_metrics_install_metrics=True
+openshift_metrics_hawkular_hostname=hawkular-metrics.{{ openshift_cloudapps_url }}
 
-#### Override metricsPublicURL in the master config for cluster metrics
-# RECOMMENDED BUT NOT WORKING
-# openshift_metrics_hawkular_hostname=https://hawkular-metrics.cloudapps.testdrive.com/hawkular/metrics
-openshift_master_metrics_public_url=https://hawkular-metrics.cloudapps.testdrive.com/hawkular/metrics
+# Fix a bug on OCP 3.9.30
+oreg_url=registry.access.redhat.com/openshift3/ose-${component}:${version}
+openshift_storage_glusterfs_heketi_image=registry.access.redhat.com/rhgs3/rhgs-volmanager-rhel7
+openshift_storage_glusterfs_image=registry.access.redhat.com/rhgs3/rhgs-server-rhel7
+openshift_storage_glusterfs_block_image=registry.access.redhat.com/rhgs3/rhgs-gluster-block-prov-rhel7
+openshift_storage_glusterfs_s3_image=registry.access.redhat.com/rhgs3/rhgs-gluster-s3-server-rhel7
