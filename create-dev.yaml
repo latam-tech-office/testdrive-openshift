@@ -204,6 +204,7 @@
           - "ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml"
           - "ansible-playbook /root/postinstall/create_persistentvolumes.yaml -e nfs_server={{ openshift_master_private_ip }}"
           - "ansible-playbook /root/postinstall/post-install.yaml"
+          - "/root/postinstall/install_eclipse_che.sh"
       tags:
         - prepare_master
 
@@ -273,6 +274,7 @@
            - post-install.yaml
            - templates/persistentvolume-gitlab-shell.yaml.j2
            - templates/persistentvolume.yaml.j2
+           - install_eclipse_che.sh
            - install_bluegreen_canary.sh
       tags:
          - prepare_master
