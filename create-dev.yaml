@@ -273,6 +273,7 @@
            - post-install.yaml
            - templates/persistentvolume-gitlab-shell.yaml.j2
            - templates/persistentvolume.yaml.j2
+           - install_bluegreen_canary.sh
       tags:
          - prepare_master
 

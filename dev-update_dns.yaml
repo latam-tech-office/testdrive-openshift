@@ -79,11 +79,15 @@
   hosts: openshift_master
   gather_facts: False
   tasks:
-     - name: "Updating Ansible's Inventory with OpenShift's Master Public URL: {{ master_url }}"
-       replace: path=/etc/ansible/hosts regexp=master.testdrive.com  
+     - name: "Updating Ansible's OpenShift's Master Public URL: {{ master_url }}"
+       replace: path={{ item }} regexp=master.testdrive.com  
                 replace="{{ master_url }}"
+       with_items:
+           - /etc/ansible/hosts
+           - /root/postinstall/install_bluegreen_canary.sh
 
-     - name: "Updating Ansible's Inventory OpenShift's Infra Public URL: {{ cloudapps_url }}"
-       replace: path=/etc/ansible/hosts regexp=cloudapps.testdrive.com
+     - name: "Updating Ansible's OpenShift's Infra Public URL: {{ cloudapps_url }}"
+       replace: path={{ item }} regexp=cloudapps.testdrive.com
                 replace="{{ cloudapps_url }}"
-  
+           - /etc/ansible/hosts
+           - /root/postinstall/install_bluegreen_canary.sh
