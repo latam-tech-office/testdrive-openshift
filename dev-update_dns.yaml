@@ -90,6 +90,7 @@
      - name: "Updating Ansible's OpenShift's Infra Public URL: {{ cloudapps_url }}"
        replace: path={{ item }} regexp=cloudapps.testdrive.com
                 replace="{{ cloudapps_url }}"
+       with_items:
            - /etc/ansible/hosts
            - /root/postinstall/install_eclipse_che.sh
            - /root/postinstall/install_bluegreen_canary.sh
