@@ -279,6 +279,13 @@
       tags:
          - prepare_master
 
+    - name: Making some scripts runnable
+      file: path={{ item }} mode=a+x
+      with_items:
+          - /root/postinstall/install_eclipse_che.sh
+          - /root/postinstall/install_bluegreen_canary.sh
+      tags: [ prepare_master ]
+
 ### PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 ###   PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE PREPARE 
 - name: (PREPARE) Preparing all hosts to install OpenShift
