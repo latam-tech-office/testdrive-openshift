@@ -41,7 +41,6 @@ openshift_registry_selector='host=infra'
 openshift_metrics_install_metrics=True
 openshift_metrics_hawkular_hostname=hawkular-metrics.<OPENSHIFT INFRA IP>.xip.io
 
-# Fix a bug on OCP 3.9.30
 oreg_url=registry.access.redhat.com/openshift3/ose-${component}:${version}
 openshift_storage_glusterfs_heketi_image=registry.access.redhat.com/rhgs3/rhgs-volmanager-rhel7
 openshift_storage_glusterfs_image=registry.access.redhat.com/rhgs3/rhgs-server-rhel7
