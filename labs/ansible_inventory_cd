@@ -7,7 +7,7 @@ etcd
 <YOUR PREFIX>-master openshift_public_hostname=<OPENSHIFT MASTER IP>.xip.io
  
 [nodes]
-<YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
+<YOUR PREFIX>-master openshift_public_hostname=<OPENSHIFT MASTER IP>.xip.io
 <YOUR PREFIX>-infra  openshift_node_labels="{'host': 'infra'}"
 <YOUR PREFIX>-node1   openshift_node_labels="{'host': 'apps'}"
 <YOUR PREFIX>-node2   openshift_node_labels="{'host': 'apps'}"
