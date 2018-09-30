@@ -10,7 +10,6 @@ etcd
 <YOUR PREFIX>-master openshift_public_hostname=<OPENSHIFT MASTER IP>.xip.io
 <YOUR PREFIX>-infra  openshift_node_labels="{'host': 'infra'}"
 <YOUR PREFIX>-node1   openshift_node_labels="{'host': 'apps'}"
-<YOUR PREFIX>-node2   openshift_node_labels="{'host': 'apps'}"
 
 [etcd]
 <YOUR PREFIX>-master
@@ -36,11 +35,6 @@ openshift_router_selector='host=infra'
 openshift_hosted_registry_replicas=1
 openshift_hosted_registry_selector='host=infra'
 openshift_registry_selector='host=infra'
-
-#### Metrics deployment
-#### # See: https://docs.openshift.com/enterprise/latest/install_config/cluster_metrics.html
-openshift_metrics_install_metrics=True
-openshift_metrics_hawkular_hostname=hawkular-metrics.<OPENSHIFT INFRA IP>.xip.io
 
 oreg_url=registry.access.redhat.com/openshift3/ose-${component}:${version}
 openshift_storage_glusterfs_heketi_image=registry.access.redhat.com/rhgs3/rhgs-volmanager-rhel7
