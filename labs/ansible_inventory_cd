@@ -1,40 +1,105 @@
 [OSEv3:children]
 masters
-nodes
+infras
+apps
 etcd
- 
+nodes
+
 [masters]
-<YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
- 
-[nodes]
-<YOUR PREFIX>-master openshift_public_hostname=master.testdrive.com
-<YOUR PREFIX>-infra  openshift_node_labels="{'host': 'infra'}"
-<YOUR PREFIX>-node1   openshift_node_labels="{'host': 'apps'}"
+<YOUR PREFIX>-master openshift_public_hostname=<OPENSHIFT MASTER IP>.xip.io
+
+[infras]
+<YOUR PREFIX>-infra
+
+[apps]
+<YOUR PREFIX>-node1
 
 [etcd]
 <YOUR PREFIX>-master
 
+[nodes]
+<YOUR PREFIX>-master openshift_node_group_name='node-config-master'
+<YOUR PREFIX>-infra openshift_node_group_name='node-config-infra'
+<YOUR PREFIX>-node1 openshift_node_group_name='node-config-compute'
+
 [OSEv3:vars]
-deployment_type=openshift-enterprise
+###########################################################################
+### Ansible Vars
+###########################################################################
+timeout=60
+ansible_user=root
+ansible_become=True
+log_path=/root
 
-# Make sure all Template Service Broker lies at the InfraNode
-template_service_broker_selector={"host":"infra"}
-
-# Disable some checks before installing
+# OpenShift Basic Vars
+openshift_image_tag=v3.11
+openshift_pgk_version=v3.11
+openshift_release=3.11
+openshift_deployment_type=openshift-enterprise
 openshift_disable_check=disk_availability,docker_storage,memory_availability
- 
-# SSH user, this user should allow ssh based auth without requiring a password
-ansible_ssh_user=root
- 
-#### default subdomain to use for exposed routes
-openshift_master_default_subdomain=cloudapps.testdrive.com
 
-openshift_hosted_router_selector='host=infra'
-openshift_router_selector='host=infra'
+openshift_node_groups=[{'name': 'node-config-master', 'labels': ['node-role.kubernetes.io/master=true','runtime=docker']}, {'name': 'node-config-infra', 'labels': ['node-role.kubernetes.io/infra=true','runtime=docker']}, {'name': 'node-config-glusterfs', 'labels': ['runtime=docker']}, {'name': 'node-config-compute', 'labels': ['node-role.kubernetes.io/compute=true','runtime=docker'], 'edits': [{ 'key': 'kubeletArguments.pods-per-core','value': ['20']}, { 'key': 'image-gc-high-threshold', 'value': ['85']}, { 'key': 'image-gc-low-threshold', 'value': ['75']}]}]
 
+# Configure logrotate scripts
+# See: https://github.com/nickhammond/ansible-logrotate
+logrotate_scripts=[{"name": "syslog", "path": "/var/log/cron\n/var/log/maillog\n/var/log/messages\n/var/log/secure\n/var/log/spooler\n", "options": ["daily", "rotate 7","size 500M", "compress", "sharedscripts", "missingok"], "scripts": {"postrotate": "/bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true"}}]
+
+# Deploy Operator Lifecycle Management Tech Preview
+openshift_enable_olm=true
+
+##########################################################################
+### OpenShift Registries Locations
+###########################################################################
+
+oreg_url=registry.redhat.io/openshift3/ose-${component}:${version}
+oreg_auth_user=openshift-enterprise
+oreg_auth_password=EgNVuisQMHcd
+
+# For Operator Framework Images
+openshift_additional_registry_credentials=[{'host':'registry.connect.redhat.com','user':'openshift-enterprise','password':'EgNVuisQMHcd','test_image':'mongodb/enterprise-operator:0.3.2'}]
+
+# Enable cockpit
+osm_use_cockpit=true 
+osm_cockpit_plugins=['cockpit-kubernetes']
+
+# OpenShift Master Vars
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname=<OPENSHIFT MASTER IP>.xip.io
+openshift_master_cluster_public_hostname=<OPENSHIFT MASTER IP>.xip.io
+openshift_master_default_subdomain=<OPENSHIFT INFRA IP>.xip.io
+openshift_master_api_port=8443
+openshift_master_console_port=8443
+openshift_master_overwrite_named_certificates=True
+
+openshift_set_hostname=True
+openshift_clock_enabled=True
+
+openshift_examples_modify_imagestreams=true
+
+# OpenShift Network Vars
+openshift_master_dynamic_provisioning_enabled=true
+# os_sdn_network_plugin_name='redhat/openshift-ovs-networkpolicy'
+os_sdn_network_plugin_name='redhat/openshift-ovs-subnet'
+
+# OpenShift Router and Registry Vars
 openshift_hosted_registry_replicas=1
-openshift_hosted_registry_selector='host=infra'
-openshift_registry_selector='host=infra'
+openshift_registry_selector='node-role.kubernetes.io/infra=true'
 
-#openshift_hosted_metrics_deploy=true
-#openshift_master_metrics_public_url=https://hawkular-metrics.cloudapps.testdrive.com/hawkular/metrics
+openshift_hosted_router_replicas=1
+openshift_router_selector='node-role.kubernetes.io/infra=true'
+
+# OpenShift Service Catalog Vars
+openshift_enable_service_catalog=true
+
+template_service_broker_install=true
+openshift_template_service_broker_namespaces=['openshift']
+template_service_broker_selector={"node-role.kubernetes.io/infra":"true"}
+
+ansible_service_broker_install=true
+ansible_service_broker_local_registry_whitelist=['.*-apb$']
+
+openshift_storage_glusterfs_heketi_image=registry.redhat.io/rhgs3/rhgs-volmanager-rhel7
+openshift_storage_glusterfs_image=registry.redhat.io/rhgs3/rhgs-server-rhel7
+openshift_storage_glusterfs_block_image=registry.redhat.io/rhgs3/rhgs-gluster-block-prov-rhel7
+openshift_storage_glusterfs_s3_image=registry.redhat.io/rhgs3/rhgs-gluster-s3-server-rhel7
+
