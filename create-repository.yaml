@@ -9,7 +9,7 @@
   vars:
      - repository_name: openshift-repository
      - repository_machine_type: n1-standard-2
-     - repository_storage_size: 30
+     - repository_storage_size: 60
   tasks:
     - include: commons/setting_defaults.yaml
       tags:
