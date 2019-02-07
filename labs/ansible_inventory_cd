@@ -13,6 +13,7 @@ infra
 
 [apps]
 node1
+node2
 
 [etcd]
 master
