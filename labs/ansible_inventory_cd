@@ -6,21 +6,22 @@ etcd
 nodes
 
 [masters]
-<YOUR PREFIX>-master openshift_public_hostname=<OPENSHIFT MASTER IP>.xip.io
+master openshift_public_hostname=<OPENSHIFT MASTER IP>.xip.io
 
 [infras]
-<YOUR PREFIX>-infra
+infra
 
 [apps]
-<YOUR PREFIX>-node1
+node1
 
 [etcd]
-<YOUR PREFIX>-master
+master
 
 [nodes]
-<YOUR PREFIX>-master openshift_node_group_name='node-config-master'
-<YOUR PREFIX>-infra openshift_node_group_name='node-config-infra'
-<YOUR PREFIX>-node1 openshift_node_group_name='node-config-compute'
+master openshift_node_group_name='node-config-master'
+infra openshift_node_group_name='node-config-infra'
+node1 openshift_node_group_name='node-config-compute'
+node2 openshift_node_group_name='node-config-compute'
 
 [OSEv3:vars]
 ###########################################################################
