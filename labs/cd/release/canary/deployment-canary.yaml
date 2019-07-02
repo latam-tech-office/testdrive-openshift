@@ -55,7 +55,7 @@
        command: oc scale dc/{{ application_two }}-app --replicas={{ application_two_replicas }}
 
      - name: Creating environment variables for each application
-       command: oc env dc/{{ item.deploymentConfig }} DEPLOYMENT_NAME="{{ item.value }}"
+       command: oc set env dc/{{ item.deploymentConfig }} DEPLOYMENT_NAME="{{ item.value }}"
        with_items:
           - { deploymentConfig: "{{ application_one }}-app", value: "ONE" }
           - { deploymentConfig: "{{ application_two }}-app", value: "TWO" }
